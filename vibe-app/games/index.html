@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ナインメンズモリス - AI対戦</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Zen Kaku Gothic New', 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+        .board-container {
+            aspect-ratio: 1 / 1;
+            max-width: 580px;
+            width: 100%;
+        }
+        .node-circle {
+            transition: stroke 0.2s ease, fill 0.2s ease, filter 0.2s ease;
+            cursor: pointer;
+        }
+        .node-circle:hover {
+            stroke: #818cf8;
+            stroke-width: 4px;
+            filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.9));
+        }
+        .piece {
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+        }
+        .piece-selected {
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        @keyframes pulse-ring {
+            0% { filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.7)); }
+            50% { filter: drop-shadow(0 0 12px rgba(234, 179, 8, 0.9)); }
+            100% { filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.7)); }
+        }
+        .valid-move-node {
+            animation: move-glow 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes move-glow {
+            from { fill-opacity: 0.5; stroke-width: 2px; }
+            to { fill-opacity: 0.85; stroke-width: 4px; }
+        }
+        .mill-highlight {
+            animation: mill-glow 1.2s ease-in-out infinite alternate;
+        }
+        @keyframes mill-glow {
+            from { stroke: #ef4444; stroke-width: 4; }
+            to { stroke: #f59e0b; stroke-width: 7; }
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
+        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 3px; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between overflow-x-hidden">
+
+    <header class="w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 py-3 px-4 sm:px-8 sticky top-0 z-30">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid font-bold text-xl text-white">9</i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
+                        ナインメンズモリス
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Nine Men's Morris vs AI</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <button id="btn-rules" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center gap-2 text-slate-200">
+                    <i class="fa-solid fa-circle-info text-indigo-400"></i>
+                    <span>ルール</span>
+                </button>
+                <button id="btn-new-game" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i>
+                    <span>新規対局</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
+
+        <!-- Left / Top Dashboard: Player Status & Control Panel -->
+        <div class="w-full lg:w-80 flex flex-col gap-4">
+            
+            <!-- Turn & Game Status Banner -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">対局状態</div>
+                <div id="status-message" class="text-base sm:text-lg font-bold text-amber-400 min-h-[3rem] flex items-center leading-snug">
+                    ゲームを開始します。あなたの番です。
+                </div>
+                
+                <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
+                    <span class="text-slate-400">フェーズ:</span>
+                    <span id="phase-badge" class="px-2.5 py-1 rounded-full bg-indigo-950 text-indigo-300 font-bold border border-indigo-800/50">
+                        配置フェーズ
+                    </span>
+                </div>
+            </div>
+
+            <!-- Player Scores & Inventory -->
+            <div class="grid grid-cols-2 gap-3">
+                <!-- Human Player -->
+                <div id="player-card-human" class="bg-slate-900/90 border-2 border-indigo-500/80 rounded-2xl p-3 sm:p-4 shadow-lg transition-all relative overflow-hidden">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-4 h-4 rounded-full bg-indigo-500 ring-2 ring-indigo-300 shadow-sm"></div>
+                        <span class="font-bold text-sm text-slate-200">あなた (青)</span>
+                    </div>
+                    <div class="text-xs text-slate-400 space-y-1">
+                        <div class="flex justify-between">
+                            <span>未配置:</span>
+                            <span id="human-hand-count" class="font-bold text-indigo-300">9</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>盤上:</span>
+                            <span id="human-board-count" class="font-bold text-indigo-300">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Player -->
+                <div id="player-card-ai" class="bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg transition-all relative overflow-hidden">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-4 h-4 rounded-full bg-rose-500 ring-2 ring-rose-300 shadow-sm"></div>
+                        <span class="font-bold text-sm text-slate-200">AI (赤)</span>
+                    </div>
+                    <div class="text-xs text-slate-400 space-y-1">
+                        <div class="flex justify-between">
+                            <span>未配置:</span>
+                            <span id="ai-hand-count" class="font-bold text-rose-300">9</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>盤上:</span>
+                            <span id="ai-board-count" class="font-bold text-rose-300">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings & Controls Panel -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">AI難易度</label>
+                    <select id="difficulty-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="easy">初級（カジュアル）</option>
+                        <option value="medium" selected>中級（標準思考）</option>
+                        <option value="hard">上級（本格ミニマックス）</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">手番選択</label>
+                    <select id="first-turn-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                        <option value="human" selected>先攻 (あなた)</option>
+                        <option value="ai">後攻 (AIが先攻)</option>
+                        <option value="random">ランダム</option>
+                    </select>
+                </div>
+
+                <div class="pt-2 flex gap-2">
+                    <button id="btn-undo" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-rotate-left"></i> 一手戻す
+                    </button>
+                    <button id="btn-hint" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
+                        <i class="fa-solid fa-lightbulb"></i> ヒント
+                    </button>
+                </div>
+            </div>
+
+            <!-- Move History Log -->
+            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl hidden lg:block">
+                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">対局履歴</div>
+                <div id="move-history" class="h-32 overflow-y-auto text-xs text-slate-400 space-y-1 pr-1 font-mono">
+                    <div class="text-slate-500 italic">対局が開始されました</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="flex-1 flex justify-center items-center w-full max-w-[580px]">
+            <div class="board-container relative bg-slate-900/90 rounded-3xl border border-slate-800/80 p-4 sm:p-8 shadow-2xl shadow-indigo-950/50 flex items-center justify-center">
+                
+                <!-- SVG Board Graphics -->
+                <svg id="game-board-svg" viewBox="0 0 600 600" class="w-full h-full select-none">
+                    <defs>
+                        <!-- Glow filters & Gradients -->
+                        <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="6" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
+                            <feGaussianBlur stdDeviation="6" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                        
+                        <radialGradient id="grad-human" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#818cf8" />
+                            <stop offset="60%" stop-color="#4f46e5" />
+                            <stop offset="100%" stop-color="#312e81" />
+                        </radialGradient>
+                        <radialGradient id="grad-ai" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#fb7185" />
+                            <stop offset="60%" stop-color="#e11d48" />
+                            <stop offset="100%" stop-color="#881337" />
+                        </radialGradient>
+                        <radialGradient id="grad-node" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#334155" />
+                            <stop offset="100%" stop-color="#0f172a" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Board Lines -->
+                    <g id="board-lines" stroke="#475569" stroke-width="5" stroke-linecap="round">
+                        <!-- Outer Square -->
+                        <rect x="50" y="50" width="500" height="500" fill="none" rx="8"/>
+                        <!-- Middle Square -->
+                        <rect x="130" y="130" width="340" height="340" fill="none" rx="6"/>
+                        <!-- Inner Square -->
+                        <rect x="210" y="210" width="180" height="180" fill="none" rx="4"/>
+                        
+                        <!-- Connecting Lines -->
+                        <line x1="300" y1="50" x2="300" y2="210" />
+                        <line x1="300" y1="390" x2="300" y2="550" />
+                        <line x1="50" y1="300" x2="210" y2="300" />
+                        <line x1="390" y1="300" x2="550" y2="300" />
+                    </g>
+
+                    <!-- Mill Highlighting Lines Layer -->
+                    <g id="mill-lines-layer"></g>
+
+                    <!-- Valid Moves Highlights Layer -->
+                    <g id="valid-moves-layer"></g>
+
+                    <!-- Nodes (24 Interactive Points) -->
+                    <g id="board-nodes-layer"></g>
+
+                    <!-- Pieces Layer -->
+                    <g id="board-pieces-layer"></g>
+                </svg>
+
+            </div>
+        </div>
+    </main>
+
+    <div id="rules-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-indigo-400"></i> ナインメンズモリスのルール
+                </h3>
+                <button id="btn-close-rules" class="text-slate-400 hover:text-white p-1 transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-4 text-sm text-slate-300 leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-indigo-300 mb-1">1. 概要</h4>
+                    <p>互いに9個の駒を持ち、盤上の交点（ノード）に配置・移動させて勝利を目指す2人対戦の頭脳ゲームです。</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-indigo-300 mb-1">2. 進行フェーズ</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><strong class="text-slate-100">配置フェーズ:</strong> 空いている点に交代で1つずつ駒を置きます（各9個）。</li>
+                        <li><strong class="text-slate-100">移動フェーズ:</strong> 全ての駒を置いた後、線で繋がった隣の空きマスへ駒を移動させます。</li>
+                        <li><strong class="text-slate-100">飛翔（フライング）フェーズ:</strong> 自分の駒が残り<span class="text-amber-400 font-bold">3個</span>になったプレイヤーは、線の接続に関係なく盤上の任意の空きマスへワープ移動できるようになります。</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-indigo-300 mb-1">3. ミル（成）と相手の駒の除去</h4>
+                    <p>自分の駒を直線上に<strong class="text-emerald-400">3つ並べる（ミル）</strong>と、相手の盤上の駒を1つ取り除けます。</p>
+                    <p class="text-xs text-slate-400 mt-1">※相手の「すでにミルを形成している駒」は原則取れません（他に取れる駒がない場合を除く）。</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-indigo-300 mb-1">4. 勝利条件</h4>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>相手の駒数を<strong class="text-rose-400">2個以下</strong>にする。</li>
+                        <li>相手の駒の移動先をすべて封じて<strong class="text-rose-400">手詰まり（移動不能）</strong>にする。</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="p-4 border-t border-slate-800 bg-slate-900/50 flex justify-end">
+                <button id="btn-understand-rules" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition">
+                    理解しました
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gameover-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl transform transition-all">
+            <div id="gameover-icon-container" class="w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 shadow-lg">
+                <!-- Dynamic icon -->
+            </div>
+            <h2 id="gameover-title" class="text-2xl font-bold text-white mb-2">勝負決着！</h2>
+            <p id="gameover-reason" class="text-slate-400 text-sm mb-6">相手の駒を2個以下に減らしました。</p>
+            <div class="flex gap-3 justify-center">
+                <button id="btn-restart-game" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm shadow-lg shadow-indigo-500/30 transition">
+                    もう一度プレイ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="w-full text-center py-3 text-xs text-slate-500 border-t border-slate-800/50">
+        Nine Men's Morris Game Engine • Pure JavaScript & AI Minimax
+    </footer>
+
+    <script>
+    /**
+     * NINE MEN'S MORRIS GAME ENGINE
+     */
+
+    // 24 Node Board Definition with Coordinates (SVG 600x600 space)
+    const NODES = [
+        // Outer Square (0 - 7)
+        { id: 0, x: 50,  y: 50 },  { id: 1, x: 300, y: 50 },  { id: 2, x: 550, y: 50 },
+        { id: 3, x: 550, y: 300 }, { id: 4, x: 550, y: 550 }, { id: 5, x: 300, y: 550 },
+        { id: 6, x: 50,  y: 550 }, { id: 7, x: 50,  y: 300 },
+        
+        // Middle Square (8 - 15)
+        { id: 8,  x: 130, y: 130 }, { id: 9,  x: 300, y: 130 }, { id: 10, x: 470, y: 130 },
+        { id: 11, x: 470, y: 300 }, { id: 12, x: 470, y: 470 }, { id: 13, x: 300, y: 470 },
+        { id: 14, x: 130, y: 470 }, { id: 15, x: 130, y: 300 },
+        
+        // Inner Square (16 - 23)
+        { id: 16, x: 210, y: 210 }, { id: 17, x: 300, y: 210 }, { id: 18, x: 390, y: 210 },
+        { id: 19, x: 390, y: 300 }, { id: 20, x: 390, y: 390 }, { id: 21, x: 300, y: 390 },
+        { id: 22, x: 210, y: 390 }, { id: 23, x: 210, y: 300 }
+    ];
+
+    // Adjacency Graph
+    const ADJACENCY = {
+        0: [1, 7],         1: [0, 2, 9],       2: [1, 3],
+        3: [2, 4, 11],     4: [3, 5],          5: [4, 6, 13],
+        6: [5, 7],         7: [0, 6, 15],
+        
+        8: [9, 15],        9: [8, 10, 1, 17],  10: [9, 11],
+        11: [10, 12, 3, 19],12: [11, 13],      13: [12, 14, 5, 21],
+        14: [13, 15],      15: [8, 14, 7, 23],
+        
+        16: [17, 23],      17: [16, 18, 9],    18: [17, 19],
+        19: [18, 20, 11],  20: [19, 21],       21: [20, 22, 13],
+        22: [21, 23],      23: [16, 22, 15]
+    };
+
+    // All Possible Mill Triplets (16 lines)
+    const MILL_LINES = [
+        // Outer
+        [0, 1, 2], [2, 3, 4], [4, 5, 6], [6, 7, 0],
+        // Middle
+        [8, 9, 10], [10, 11, 12], [12, 13, 14], [14, 15, 8],
+        // Inner
+        [16, 17, 18], [18, 19, 20], [20, 21, 22], [22, 23, 16],
+        // Cross connections
+        [1, 9, 17], [3, 11, 19], [5, 13, 21], [7, 15, 23]
+    ];
+
+    // PLAYER CONSTANTS
+    const HUMAN = 'H';
+    const AI = 'A';
+    const EMPTY = null;
+
+    // Game State
+    let gameState = {
+        board: Array(24).fill(EMPTY),
+        turn: HUMAN, // HUMAN or AI
+        phase: 'placing', // 'placing', 'moving'
+        hand: { H: 9, A: 9 },
+        mustRemove: false, // true when player formed a mill and must pick an opponent piece
+        selectedNode: null,
+        history: [],
+        winner: null,
+        isThinkingAI: false
+    };
+
+    // DOM Elements
+    const elements = {
+        statusMsg: document.getElementById('status-message'),
+        phaseBadge: document.getElementById('phase-badge'),
+        humanHandCount: document.getElementById('human-hand-count'),
+        humanBoardCount: document.getElementById('human-board-count'),
+        aiHandCount: document.getElementById('ai-hand-count'),
+        aiBoardCount: document.getElementById('ai-board-count'),
+        difficultySelect: document.getElementById('difficulty-select'),
+        firstTurnSelect: document.getElementById('first-turn-select'),
+        moveHistory: document.getElementById('move-history'),
+        nodesLayer: document.getElementById('board-nodes-layer'),
+        piecesLayer: document.getElementById('board-pieces-layer'),
+        validLayer: document.getElementById('valid-moves-layer'),
+        millLinesLayer: document.getElementById('mill-lines-layer'),
+        btnUndo: document.getElementById('btn-undo'),
+        btnHint: document.getElementById('btn-hint'),
+        btnNewGame: document.getElementById('btn-new-game'),
+        btnRules: document.getElementById('btn-rules'),
+        btnCloseRules: document.getElementById('btn-close-rules'),
+        btnUnderstandRules: document.getElementById('btn-understand-rules'),
+        rulesModal: document.getElementById('rules-modal'),
+        gameoverModal: document.getElementById('gameover-modal'),
+        gameoverTitle: document.getElementById('gameover-title'),
+        gameoverReason: document.getElementById('gameover-reason'),
+        gameoverIconContainer: document.getElementById('gameover-icon-container'),
+        btnRestartGame: document.getElementById('btn-restart-game'),
+        playerCardHuman: document.getElementById('player-card-human'),
+        playerCardAi: document.getElementById('player-card-ai')
+    };
+
+    // Initialize Game Board SVG
+    function initSVG() {
+        elements.nodesLayer.innerHTML = '';
+        
+        NODES.forEach(node => {
+            // Interactive SVG Circles for Nodes
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', node.x);
+            circle.setAttribute('cy', node.y);
+            circle.setAttribute('r', '14');
+            circle.setAttribute('fill', 'url(#grad-node)');
+            circle.setAttribute('stroke', '#475569');
+            circle.setAttribute('stroke-width', '3');
+            circle.setAttribute('class', 'node-circle');
+            circle.setAttribute('data-id', node.id);
+            
+            circle.addEventListener('click', () => handleNodeClick(node.id));
+            elements.nodesLayer.appendChild(circle);
+        });
+
+        render();
+    }
+
+    // Main Game Setup & Reset
+    function resetGame() {
+        let startingTurn = elements.firstTurnSelect.value;
+        if (startingTurn === 'random') {
+            startingTurn = Math.random() < 0.5 ? HUMAN : AI;
+        } else if (startingTurn === 'human') {
+            startingTurn = HUMAN;
+        } else {
+            startingTurn = AI;
+        }
+
+        gameState = {
+            board: Array(24).fill(EMPTY),
+            turn: startingTurn,
+            phase: 'placing',
+            hand: { H: 9, A: 9 },
+            mustRemove: false,
+            selectedNode: null,
+            history: [],
+            winner: null,
+            isThinkingAI: false
+        };
+        
+        const turnText = startingTurn === HUMAN ? "あなた (青)" : "AI (赤)";
+        logMove(`新しいゲームを開始しました。先攻: ${turnText}`);
+        render();
+        hideModals();
+
+        if (startingTurn === AI) {
+            gameState.isThinkingAI = true;
+            render();
+            setTimeout(executeAIMove, 600);
+        }
+    }
+
+    // Save history state for Undo functionality
+    function saveHistory() {
+        gameState.history.push({
+            board: [...gameState.board],
+            turn: gameState.turn,
+            phase: gameState.phase,
+            hand: { ...gameState.hand },
+            mustRemove: gameState.mustRemove
+        });
+        if (gameState.history.length > 20) gameState.history.shift();
+    }
+
+    function undoMove() {
+        if (gameState.isThinkingAI || gameState.history.length === 0) return;
+        
+        // Revert until Human turn
+        let lastState;
+        do {
+            lastState = gameState.history.pop();
+        } while (lastState && lastState.turn !== HUMAN && gameState.history.length > 0);
+
+        if (lastState) {
+            gameState.board = [...lastState.board];
+            gameState.turn = lastState.turn;
+            gameState.phase = lastState.phase;
+            gameState.hand = { ...lastState.hand };
+            gameState.mustRemove = lastState.mustRemove;
+            gameState.selectedNode = null;
+            gameState.winner = null;
+            logMove("一手戻しました。");
+            render();
+        }
+    }
+
+    function getBoardCount(player) {
+        return gameState.board.filter(cell => cell === player).length;
+    }
+
+    function isFlyingPhase(player) {
+        return gameState.hand[player] === 0 && getBoardCount(player) === 3;
+    }
+
+    function checkMill(board, nodeIndex, player) {
+        if (board[nodeIndex] !== player) return false;
+        
+        return MILL_LINES.some(line => {
+            if (line.includes(nodeIndex)) {
+                return line.every(idx => board[idx] === player);
+            }
+            return false;
+        });
+    }
+
+    // Check if the target node belongs to a completed mill
+    function isPartOfMill(board, nodeIndex, player) {
+        if (board[nodeIndex] !== player) return false;
+        return MILL_LINES.some(line => line.includes(nodeIndex) && line.every(idx => board[idx] === player));
+    }
+
+    // Get list of enemy pieces that can be removed
+    function getRemovableOpponentNodes(board, opponent) {
+        const opponentNodes = [];
+        for (let i = 0; i < 24; i++) {
+            if (board[i] === opponent) opponentNodes.push(i);
+        }
+
+        // Filter out nodes that are in a mill
+        const nonMillNodes = opponentNodes.filter(idx => !isPartOfMill(board, idx, opponent));
+
+        // Rule: If all opponent pieces are in mills, any piece can be removed
+        return nonMillNodes.length > 0 ? nonMillNodes : opponentNodes;
+    }
+
+    // Check valid legal moves for a player
+    function getValidMovesForNode(board, fromNode, player) {
+        if (board[fromNode] !== player) return [];
+        
+        if (isFlyingPhase(player)) {
+            // Can fly to any empty node
+            const emptyNodes = [];
+            for (let i = 0; i < 24; i++) {
+                if (board[i] === EMPTY) emptyNodes.push(i);
+            }
+            return emptyNodes;
+        } else {
+            // Adjacent empty nodes only
+            return ADJACENCY[fromNode].filter(adj => board[adj] === EMPTY);
+        }
+    }
+
+    function hasLegalMoves(board, player) {
+        if (gameState.hand[player] > 0) return true; // Can place
+        if (isFlyingPhase(player)) return true; // Always has empty spots if opponent < 21
+        
+        for (let i = 0; i < 24; i++) {
+            if (board[i] === player) {
+                const moves = getValidMovesForNode(board, i, player);
+                if (moves.length > 0) return true;
+            }
+        }
+        return false;
+    }
+
+    // Check Win/Loss conditions
+    function checkGameOver() {
+        const opponent = gameState.turn === HUMAN ? AI : HUMAN;
+        
+        // After placing phase, if board count < 3 => Loss
+        if (gameState.hand[opponent] === 0 && getBoardCount(opponent) < 3) {
+            return gameState.turn; // Winner is current player
+        }
+
+        // If opponent has no legal moves => Loss
+        if (!hasLegalMoves(gameState.board, opponent)) {
+            return gameState.turn; // Winner is current player
+        }
+
+        return null;
+    }
+
+    function handleNodeClick(nodeId) {
+        if (gameState.winner || gameState.isThinkingAI || gameState.turn !== HUMAN) return;
+
+        // Mode 1: Removing opponent piece after forming a mill
+        if (gameState.mustRemove) {
+            const removable = getRemovableOpponentNodes(gameState.board, AI);
+            if (removable.includes(nodeId)) {
+                saveHistory();
+                gameState.board[nodeId] = EMPTY;
+                gameState.mustRemove = false;
+                logMove(`あなたのミル完成！ AIの駒 (${nodeId}) を撃破しました。`);
+                
+                const winner = checkGameOver();
+                if (winner) {
+                    endGame(winner, "AIの駒を2個以下にするか詰ませました！");
+                    return;
+                }
+                
+                switchTurn();
+            } else {
+                showStatus("そこは削除できません。ミル以外の相手の駒を選択してください。", "text-amber-400");
+            }
+            render();
+            return;
+        }
+
+        // Mode 2: Placing Phase
+        if (gameState.phase === 'placing') {
+            if (gameState.board[nodeId] === EMPTY) {
+                saveHistory();
+                gameState.board[nodeId] = HUMAN;
+                gameState.hand.H--;
+                logMove(`あなたの配置: ノード ${nodeId}`);
+
+                if (checkMill(gameState.board, nodeId, HUMAN)) {
+                    gameState.mustRemove = true;
+                    logMove("ミル（3つ並び）が成立！ 相手の駒を選択して除去してください。");
+                    render();
+                    return;
+                }
+
+                checkPhaseTransition();
+                switchTurn();
+            }
+            render();
+            return;
+        }
+
+        // Mode 3: Moving / Flying Phase
+        if (gameState.phase === 'moving') {
+            // Select piece to move
+            if (gameState.board[nodeId] === HUMAN) {
+                gameState.selectedNode = nodeId;
+                render();
+                return;
+            }
+
+            // Move selected piece to empty target node
+            if (gameState.selectedNode !== null && gameState.board[nodeId] === EMPTY) {
+                const validMoves = getValidMovesForNode(gameState.board, gameState.selectedNode, HUMAN);
+                
+                if (validMoves.includes(nodeId)) {
+                    saveHistory();
+                    gameState.board[gameState.selectedNode] = EMPTY;
+                    gameState.board[nodeId] = HUMAN;
+                    
+                    const from = gameState.selectedNode;
+                    gameState.selectedNode = null;
+                    
+                    logMove(`あなたの移動: ${from} ➔ ${nodeId}`);
+
+                    if (checkMill(gameState.board, nodeId, HUMAN)) {
+                        gameState.mustRemove = true;
+                        logMove("ミルが成立！ 相手の駒を選択して除去してください。");
+                        render();
+                        return;
+                    }
+
+                    switchTurn();
+                } else {
+                    showStatus("そこには移動できません。", "text-amber-400");
+                }
+            }
+            render();
+        }
+    }
+
+    function checkPhaseTransition() {
+        if (gameState.hand.H === 0 && gameState.hand.A === 0) {
+            gameState.phase = 'moving';
+        }
+    }
+
+    function switchTurn() {
+        const winner = checkGameOver();
+        if (winner) {
+            endGame(winner, winner === HUMAN ? "勝利しました！" : "AIの勝利です。");
+            return;
+        }
+
+        gameState.turn = gameState.turn === HUMAN ? AI : HUMAN;
+        
+        if (gameState.turn === AI) {
+            gameState.isThinkingAI = true;
+            render();
+            setTimeout(executeAIMove, 600); // Natural delay for AI thinking
+        } else {
+            render();
+        }
+    }
+
+    function executeAIMove() {
+        if (gameState.winner) return;
+
+        const difficulty = elements.difficultySelect.value;
+        const depth = difficulty === 'easy' ? 1 : (difficulty === 'medium' ? 2 : 4);
+
+        if (gameState.mustRemove) {
+            // AI must pick human piece to remove
+            const removable = getRemovableOpponentNodes(gameState.board, HUMAN);
+            // Choose best piece to break human's potential mills
+            let bestPick = removable[0];
+            let bestScore = -Infinity;
+
+            removable.forEach(idx => {
+                const tempBoard = [...gameState.board];
+                tempBoard[idx] = EMPTY;
+                const score = evaluateBoard(tempBoard, AI);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestPick = idx;
+                }
+            });
+
+            gameState.board[bestPick] = EMPTY;
+            gameState.mustRemove = false;
+            logMove(`AIがあなたの駒 (${bestPick}) を除去しました。`);
+
+            const winner = checkGameOver();
+            if (winner) {
+                endGame(winner, "AIに駒を削られ負けました。");
+                return;
+            }
+
+            gameState.isThinkingAI = false;
+            switchTurn();
+            return;
+        }
+
+        // Placing Phase AI
+        if (gameState.phase === 'placing') {
+            const bestNode = getBestPlaceMove(depth);
+            gameState.board[bestNode] = AI;
+            gameState.hand.A--;
+            logMove(`AIの配置: ノード ${bestNode}`);
+
+            if (checkMill(gameState.board, bestNode, AI)) {
+                gameState.mustRemove = true;
+                logMove("AIのミルが成立しました！");
+                render();
+                setTimeout(executeAIMove, 700); // Chain removal step
+                return;
+            }
+
+            checkPhaseTransition();
+            gameState.isThinkingAI = false;
+            switchTurn();
+            return;
+        }
+
+        // Moving Phase AI
+        if (gameState.phase === 'moving') {
+            const move = getBestMoveAI(depth);
+            if (move) {
+                gameState.board[move.from] = EMPTY;
+                gameState.board[move.to] = AI;
+                logMove(`AIの移動: ${move.from} ➔ ${move.to}`);
+
+                if (checkMill(gameState.board, move.to, AI)) {
+                    gameState.mustRemove = true;
+                    logMove("AIのミルが成立しました！");
+                    render();
+                    setTimeout(executeAIMove, 700);
+                    return;
+                }
+            }
+            gameState.isThinkingAI = false;
+            switchTurn();
+        }
+    }
+
+    // AI Evaluation Function
+    function evaluateBoard(board, player) {
+        const opponent = player === AI ? HUMAN : AI;
+
+        // Piece count weights
+        const myBoardCount = board.filter(c => c === player).length;
+        const oppBoardCount = board.filter(c => c === opponent).length;
+        let score = (myBoardCount - oppBoardCount) * 100;
+
+        // Mill count evaluation
+        let myMills = 0;
+        let oppMills = 0;
+        MILL_LINES.forEach(line => {
+            if (line.every(i => board[i] === player)) myMills++;
+            if (line.every(i => board[i] === opponent)) oppMills++;
+        });
+        score += (myMills - oppMills) * 45;
+
+        // Blocked moves evaluation
+        if (gameState.phase === 'moving') {
+            let myMobility = 0;
+            let oppMobility = 0;
+            for (let i = 0; i < 24; i++) {
+                if (board[i] === player) myMobility += getValidMovesForNode(board, i, player).length;
+                if (board[i] === opponent) oppMobility += getValidMovesForNode(board, i, opponent).length;
+            }
+            score += (myMobility - oppMobility) * 5;
+        }
+
+        return score;
+    }
+
+    function getBestPlaceMove(depth) {
+        const emptyNodes = [];
+        for (let i = 0; i < 24; i++) {
+            if (gameState.board[i] === EMPTY) emptyNodes.push(i);
+        }
+
+        // Instant mill creation check
+        for (let node of emptyNodes) {
+            const temp = [...gameState.board];
+            temp[node] = AI;
+            if (checkMill(temp, node, AI)) return node;
+        }
+
+        // Instant block human mill check
+        for (let node of emptyNodes) {
+            const temp = [...gameState.board];
+            temp[node] = HUMAN;
+            if (checkMill(temp, node, HUMAN)) return node;
+        }
+
+        // Minimax heuristic choice
+        let bestScore = -Infinity;
+        let bestNode = emptyNodes[Math.floor(Math.random() * emptyNodes.length)];
+
+        emptyNodes.forEach(node => {
+            const tempBoard = [...gameState.board];
+            tempBoard[node] = AI;
+            const score = minimax(tempBoard, depth - 1, -Infinity, Infinity, false);
+            if (score > bestScore) {
+                bestScore = score;
+                bestNode = node;
+            }
+        });
+
+        return bestNode;
+    }
+
+    function getBestMoveAI(depth) {
+        let possibleMoves = [];
+        for (let i = 0; i < 24; i++) {
+            if (gameState.board[i] === AI) {
+                const targets = getValidMovesForNode(gameState.board, i, AI);
+                targets.forEach(to => possibleMoves.push({ from: i, to }));
+            }
+        }
+
+        if (possibleMoves.length === 0) return null;
+
+        let bestScore = -Infinity;
+        let bestMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+
+        possibleMoves.forEach(m => {
+            const tempBoard = [...gameState.board];
+            tempBoard[m.from] = EMPTY;
+            tempBoard[m.to] = AI;
+
+            let score = 0;
+            if (checkMill(tempBoard, m.to, AI)) score += 80;
+
+            score += minimax(tempBoard, depth - 1, -Infinity, Infinity, false);
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = m;
+            }
+        });
+
+        return bestMove;
+    }
+
+    function minimax(board, depth, alpha, beta, isMaximizing) {
+        if (depth === 0) return evaluateBoard(board, AI);
+
+        if (isMaximizing) {
+            let maxEval = -Infinity;
+            // Simplified recursive search for minimax efficiency
+            for (let i = 0; i < 24; i++) {
+                if (board[i] === EMPTY) {
+                    board[i] = AI;
+                    let evalVal = minimax(board, depth - 1, alpha, beta, false);
+                    board[i] = EMPTY;
+                    maxEval = Math.max(maxEval, evalVal);
+                    alpha = Math.max(alpha, evalVal);
+                    if (beta <= alpha) break;
+                }
+            }
+            return maxEval;
+        } else {
+            let minEval = Infinity;
+            for (let i = 0; i < 24; i++) {
+                if (board[i] === EMPTY) {
+                    board[i] = HUMAN;
+                    let evalVal = minimax(board, depth - 1, alpha, beta, true);
+                    board[i] = EMPTY;
+                    minEval = Math.min(minEval, evalVal);
+                    beta = Math.min(beta, evalVal);
+                    if (beta <= alpha) break;
+                }
+            }
+            return minEval;
+        }
+    }
+
+    function giveHint() {
+        if (gameState.turn !== HUMAN || gameState.isThinkingAI || gameState.winner) return;
+
+        if (gameState.mustRemove) {
+            const removable = getRemovableOpponentNodes(gameState.board, AI);
+            showStatus(`ヒント: マス [${removable.join(', ')}] のいずれかを除去してください。`, "text-amber-300");
+            return;
+        }
+
+        if (gameState.phase === 'placing') {
+            for (let i = 0; i < 24; i++) {
+                if (gameState.board[i] === EMPTY) {
+                    const temp = [...gameState.board];
+                    temp[i] = HUMAN;
+                    if (checkMill(temp, i, HUMAN)) {
+                        showStatus(`ヒント: ノード ${i} に置くとミルが作れます！`, "text-emerald-400");
+                        return;
+                    }
+                }
+            }
+            showStatus("ヒント: 中央や交差点（接続の多いマス）を優先して配置しましょう。", "text-indigo-300");
+        } else {
+            showStatus("ヒント: 相手の駒の動きをブロックするか、3つ並びを作れる場所を探しましょう。", "text-indigo-300");
+        }
+    }
+
+    function render() {
+        // Update Inventory & Status Labels
+        elements.humanHandCount.textContent = gameState.hand.H;
+        elements.humanBoardCount.textContent = getBoardCount(HUMAN);
+        elements.aiHandCount.textContent = gameState.hand.A;
+        elements.aiBoardCount.textContent = getBoardCount(AI);
+
+        // Update Phase & Cards
+        if (gameState.phase === 'placing') {
+            elements.phaseBadge.textContent = "配置フェーズ";
+        } else {
+            const isFlying = isFlyingPhase(gameState.turn);
+            elements.phaseBadge.textContent = isFlying ? "飛翔（ワープ）フェーズ" : "移動フェーズ";
+        }
+
+        // Active Player Card Highlight
+        if (gameState.turn === HUMAN) {
+            elements.playerCardHuman.className = "bg-slate-900/90 border-2 border-indigo-500 rounded-2xl p-3 sm:p-4 shadow-lg shadow-indigo-500/20";
+            elements.playerCardAi.className = "bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg opacity-60";
+        } else {
+            elements.playerCardAi.className = "bg-slate-900/90 border-2 border-rose-500 rounded-2xl p-3 sm:p-4 shadow-lg shadow-rose-500/20";
+            elements.playerCardHuman.className = "bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg opacity-60";
+        }
+
+        // Turn Status Messages
+        if (gameState.winner) {
+            // Handled in endGame
+        } else if (gameState.mustRemove) {
+            if (gameState.turn === HUMAN) {
+                showStatus("【ミル完成！】除去可能な相手の赤駒を選択してください。", "text-amber-400 font-bold");
+            } else {
+                showStatus("AIがミルを完成させました。駒を選んでいます...", "text-rose-400 font-bold");
+            }
+        } else if (gameState.turn === HUMAN) {
+            if (gameState.phase === 'placing') {
+                showStatus("あなたの番です: 空いているマスに駒を置いた後、ミル（3つ並び）を狙いましょう。", "text-indigo-300");
+            } else {
+                if (gameState.selectedNode !== null) {
+                    showStatus(`ノード ${gameState.selectedNode} を選択中。移動先のマスをクリックしてください。`, "text-amber-300");
+                } else {
+                    showStatus("あなたの番です: 移動させる自分の青駒をクリックしてください。", "text-indigo-300");
+                }
+            }
+        } else {
+            showStatus("AIが思考中...", "text-rose-400 animate-pulse");
+        }
+
+        // Render Pieces
+        elements.piecesLayer.innerHTML = '';
+        elements.validLayer.innerHTML = '';
+
+        NODES.forEach(node => {
+            const pieceOwner = gameState.board[node.id];
+            
+            if (pieceOwner !== EMPTY) {
+                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                
+                const pieceCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                pieceCircle.setAttribute('cx', node.x);
+                pieceCircle.setAttribute('cy', node.y);
+                pieceCircle.setAttribute('r', '22');
+                pieceCircle.setAttribute('fill', pieceOwner === HUMAN ? 'url(#grad-human)' : 'url(#grad-ai)');
+                pieceCircle.setAttribute('stroke', pieceOwner === HUMAN ? '#a5b4fc' : '#fca5a5');
+                pieceCircle.setAttribute('stroke-width', '2.5');
+                pieceCircle.setAttribute('class', `piece ${gameState.selectedNode === node.id ? 'piece-selected' : ''}`);
+
+                // Click event for pieces
+                pieceCircle.addEventListener('click', () => handleNodeClick(node.id));
+
+                group.appendChild(pieceCircle);
+
+                // Add highlight ring if piece is part of a mill
+                if (isPartOfMill(gameState.board, node.id, pieceOwner)) {
+                    const millRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    millRing.setAttribute('cx', node.x);
+                    millRing.setAttribute('cy', node.y);
+                    millRing.setAttribute('r', '26');
+                    millRing.setAttribute('fill', 'none');
+                    millRing.setAttribute('stroke', pieceOwner === HUMAN ? '#818cf8' : '#fb7185');
+                    millRing.setAttribute('stroke-width', '2');
+                    millRing.setAttribute('stroke-dasharray', '4 2');
+                    group.appendChild(millRing);
+                }
+
+                elements.piecesLayer.appendChild(group);
+            }
+        });
+
+        // Render Valid Move Highlights for Human Player
+        if (gameState.turn === HUMAN && gameState.phase === 'moving' && gameState.selectedNode !== null) {
+            const validMoves = getValidMovesForNode(gameState.board, gameState.selectedNode, HUMAN);
+            
+            validMoves.forEach(targetId => {
+                const targetNode = NODES[targetId];
+                const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                highlight.setAttribute('cx', targetNode.x);
+                highlight.setAttribute('cy', targetNode.y);
+                highlight.setAttribute('r', '13');
+                highlight.setAttribute('fill', '#f59e0b');
+                highlight.setAttribute('stroke', '#fef08a');
+                highlight.setAttribute('class', 'valid-move-node');
+                highlight.style.pointerEvents = 'none';
+
+                elements.validLayer.appendChild(highlight);
+            });
+        }
+
+        // Render Mill Highlights
+        renderMillHighlights();
+    }
+
+    function renderMillHighlights() {
+        elements.millLinesLayer.innerHTML = '';
+
+        MILL_LINES.forEach(line => {
+            const first = gameState.board[line[0]];
+            if (first !== EMPTY && line.every(idx => gameState.board[idx] === first)) {
+                const n1 = NODES[line[0]];
+                const n3 = NODES[line[2]];
+
+                const millLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                millLine.setAttribute('x1', n1.x);
+                millLine.setAttribute('y1', n1.y);
+                millLine.setAttribute('x2', n3.x);
+                millLine.setAttribute('y2', n3.y);
+                millLine.setAttribute('class', 'mill-highlight');
+
+                elements.millLinesLayer.appendChild(millLine);
+            }
+        });
+    }
+
+    function showStatus(msg, textClass = "text-amber-400") {
+        elements.statusMsg.className = `text-base sm:text-lg font-bold min-h-[3rem] flex items-center leading-snug ${textClass}`;
+        elements.statusMsg.textContent = msg;
+    }
+
+    function logMove(msg) {
+        const entry = document.createElement('div');
+        entry.className = "py-0.5 border-b border-slate-800/50 flex justify-between";
+        entry.innerHTML = `<span>${msg}</span>`;
+        elements.moveHistory.prepend(entry);
+    }
+
+    function endGame(winner, reason) {
+        gameState.winner = winner;
+        elements.gameoverModal.classList.remove('hidden');
+
+        if (winner === HUMAN) {
+            elements.gameoverTitle.textContent = "勝利！ 🎉";
+            elements.gameoverReason.textContent = reason;
+            elements.gameoverIconContainer.className = "w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/30";
+            elements.gameoverIconContainer.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+        } else {
+            elements.gameoverTitle.textContent = "敗北... 🤖";
+            elements.gameoverReason.textContent = reason;
+            elements.gameoverIconContainer.className = "w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg shadow-rose-500/30";
+            elements.gameoverIconContainer.innerHTML = `<i class="fa-solid fa-robot"></i>`;
+        }
+    }
+
+    function hideModals() {
+        elements.rulesModal.classList.add('hidden');
+        elements.gameoverModal.classList.add('hidden');
+    }
+
+    // Event Listeners Registration
+    elements.btnNewGame.addEventListener('click', resetGame);
+    elements.btnRestartGame.addEventListener('click', resetGame);
+    elements.btnUndo.addEventListener('click', undoMove);
+    elements.btnHint.addEventListener('click', giveHint);
+
+    elements.btnRules.addEventListener('click', () => elements.rulesModal.classList.remove('hidden'));
+    elements.btnCloseRules.addEventListener('click', hideModals);
+    elements.btnUnderstandRules.addEventListener('click', hideModals);
+
+    // Initial Engine Bootstrap
+    window.addEventListener('load', () => {
+        initSVG();
+        resetGame();
+    });
+    </script>
+</body>
+</html>
