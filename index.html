@@ -10,7 +10,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap');
         body {
             font-family: 'Zen Kaku Gothic New', 'Outfit', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 70%, #020617 100%);
             min-height: 100vh;
             color: #f8fafc;
         }
@@ -24,20 +24,20 @@
             cursor: pointer;
         }
         .node-circle:hover {
-            stroke: #818cf8;
+            stroke: #fbbf24;
             stroke-width: 4px;
-            filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.9));
+            filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.9));
         }
         .piece {
             transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.6));
         }
         .piece-selected {
             animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
         }
         @keyframes pulse-ring {
             0% { filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.7)); }
-            50% { filter: drop-shadow(0 0 12px rgba(234, 179, 8, 0.9)); }
+            50% { filter: drop-shadow(0 0 14px rgba(234, 179, 8, 1)); }
             100% { filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.7)); }
         }
         .valid-move-node {
@@ -54,204 +54,394 @@
             from { stroke: #ef4444; stroke-width: 4; }
             to { stroke: #f59e0b; stroke-width: 7; }
         }
+        /* Hint & Mill Layer Click Through Protection */
+        #hint-layer, #mill-lines-layer {
+            pointer-events: none;
+        }
+        /* Hint Glow Effects */
+        .hint-pulse {
+            animation: hint-glow 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite alternate;
+        }
+        @keyframes hint-glow {
+            0% { r: 18px; stroke-width: 3px; stroke-opacity: 0.7; fill-opacity: 0.3; }
+            100% { r: 26px; stroke-width: 6px; stroke-opacity: 1; fill-opacity: 0.65; }
+        }
+        .hint-line {
+            stroke-dasharray: 8 6;
+            animation: dash 1.2s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -28; }
+        }
+        /* RPG Retro Window Styles */
+        .rpg-window {
+            background-color: #0f172a;
+            border: 4px solid #fbbf24;
+            box-shadow: inset 0 0 0 2px #78350f, 0 10px 30px rgba(0, 0, 0, 0.85);
+            image-rendering: pixelated;
+        }
+        .rpg-card {
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 3px solid #b45309;
+            box-shadow: inset 0 0 0 1px #78350f;
+        }
+        .rpg-btn {
+            background: #1e293b;
+            border: 2px solid #475569;
+            transition: all 0.15s ease;
+        }
+        .rpg-btn:hover {
+            background: #312e81;
+            border-color: #818cf8;
+            transform: translateY(-2px);
+        }
+        .rpg-btn.selected {
+            background: #4338ca;
+            border-color: #fbbf24;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
-        ::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb { background: rgba(217, 119, 6, 0.6); border-radius: 3px; }
     </style>
 </head>
 <body class="flex flex-col min-h-screen justify-between overflow-x-hidden">
 
-    <header class="w-full bg-slate-900/80 backdrop-blur-md border-b border-slate-800 py-3 px-4 sm:px-8 sticky top-0 z-30">
+    <header class="w-full bg-slate-950/90 backdrop-blur-md border-b-2 border-amber-600/60 py-3 px-4 sm:px-8 sticky top-0 z-30 shadow-lg">
         <div class="max-w-6xl mx-auto flex justify-between items-center">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                    <i class="fa-solid font-bold text-xl text-white">9</i>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 border-2 border-amber-300 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                    <i class="fa-solid font-bold text-xl text-slate-950">9</i>
                 </div>
                 <div>
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">
-                        ナインメンズモリス
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-yellow-500 bg-clip-text text-transparent flex items-center gap-2">
+                        <span>ナインメンズモリス</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">RPG EDITION</span>
                     </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Nine Men's Morris vs AI</p>
+                    <p class="text-xs text-amber-400/70 hidden sm:block">古代ローマの戦術試練 vs 魔王AI</p>
                 </div>
             </div>
 
             <div class="flex items-center gap-2 sm:gap-4">
-                <button id="btn-rules" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs sm:text-sm font-medium transition flex items-center gap-2 text-slate-200">
-                    <i class="fa-solid fa-circle-info text-indigo-400"></i>
-                    <span>ルール</span>
+                <button id="btn-rules" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border-2 border-amber-500/50 text-xs sm:text-sm font-bold transition flex items-center gap-2 text-amber-300 shadow">
+                    <i class="fa-solid fa-scroll text-amber-400"></i>
+                    <span>極意 (ルール)</span>
                 </button>
-                <button id="btn-new-game" class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-semibold shadow-md shadow-indigo-600/30 transition flex items-center gap-2">
-                    <i class="fa-solid fa-rotate-right"></i>
-                    <span>新規対局</span>
+                <button id="btn-open-rpg-setup" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-lg shadow-amber-600/30 transition flex items-center gap-2 border border-amber-300">
+                    <i class="fa-solid fa-dungeon"></i>
+                    <span>作戦変更 / 新規対局</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="flex-grow max-w-6xl w-full mx-auto p-3 sm:p-6 flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
-
-        <!-- Left / Top Dashboard: Player Status & Control Panel -->
-        <div class="w-full lg:w-80 flex flex-col gap-4">
-            
-            <!-- Turn & Game Status Banner -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl backdrop-blur-sm">
-                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">対局状態</div>
-                <div id="status-message" class="text-base sm:text-lg font-bold text-amber-400 min-h-[3rem] flex items-center leading-snug">
-                    ゲームを開始します。あなたの番です。
-                </div>
-                
-                <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between items-center text-xs">
-                    <span class="text-slate-400">フェーズ:</span>
-                    <span id="phase-badge" class="px-2.5 py-1 rounded-full bg-indigo-950 text-indigo-300 font-bold border border-indigo-800/50">
-                        配置フェーズ
-                    </span>
-                </div>
-            </div>
-
-            <!-- Player Scores & Inventory -->
+    <!-- Main Game Section -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Side Panel: Stats & Controls -->
+        <div class="lg:col-span-4 flex flex-col gap-4">
+            <!-- RPG Player Status Cards -->
             <div class="grid grid-cols-2 gap-3">
                 <!-- Human Player -->
-                <div id="player-card-human" class="bg-slate-900/90 border-2 border-indigo-500/80 rounded-2xl p-3 sm:p-4 shadow-lg transition-all relative overflow-hidden">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-4 h-4 rounded-full bg-indigo-500 ring-2 ring-indigo-300 shadow-sm"></div>
-                        <span class="font-bold text-sm text-slate-200">あなた (青)</span>
-                    </div>
-                    <div class="text-xs text-slate-400 space-y-1">
-                        <div class="flex justify-between">
-                            <span>未配置:</span>
-                            <span id="human-hand-count" class="font-bold text-indigo-300">9</span>
+                <div id="player-card-human" class="rpg-card rounded-2xl p-3 sm:p-4 shadow-xl border-indigo-500 transition">
+                    <div class="flex items-center gap-2 mb-2 pb-1 border-b border-indigo-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-900 border border-indigo-400 flex items-center justify-center text-indigo-300 text-xs font-bold">
+                            <i class="fa-solid fa-shield-halved"></i>
                         </div>
-                        <div class="flex justify-between">
-                            <span>盤上:</span>
-                            <span id="human-board-count" class="font-bold text-indigo-300">0</span>
+                        <div>
+                            <div class="font-extrabold text-xs text-indigo-300">LV.01 勇者</div>
+                            <div class="text-xs font-bold text-slate-100">あなた (青)</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-300 space-y-1.5">
+                        <div class="flex justify-between bg-slate-950/60 p-1.5 rounded border border-indigo-500/20">
+                            <span>戦場の駒:</span> <b id="human-board-count" class="text-indigo-300 text-sm font-bold">0</b>
+                        </div>
+                        <div class="flex justify-between bg-slate-950/60 p-1.5 rounded border border-indigo-500/20">
+                            <span>控室の駒:</span> <b id="human-hand-count" class="text-amber-400 text-sm font-bold">9</b>
                         </div>
                     </div>
                 </div>
 
                 <!-- AI Player -->
-                <div id="player-card-ai" class="bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg transition-all relative overflow-hidden">
-                    <div class="flex items-center gap-2 mb-2">
-                        <div class="w-4 h-4 rounded-full bg-rose-500 ring-2 ring-rose-300 shadow-sm"></div>
-                        <span class="font-bold text-sm text-slate-200">AI (赤)</span>
-                    </div>
-                    <div class="text-xs text-slate-400 space-y-1">
-                        <div class="flex justify-between">
-                            <span>未配置:</span>
-                            <span id="ai-hand-count" class="font-bold text-rose-300">9</span>
+                <div id="player-card-ai" class="rpg-card rounded-2xl p-3 sm:p-4 shadow-xl border-slate-700 opacity-60 transition">
+                    <div class="flex items-center gap-2 mb-2 pb-1 border-b border-rose-500/30">
+                        <div class="w-7 h-7 rounded-lg bg-rose-950 border border-rose-400 flex items-center justify-center text-rose-300 text-xs font-bold">
+                            <i class="fa-solid fa-dragon"></i>
                         </div>
-                        <div class="flex justify-between">
-                            <span>盤上:</span>
-                            <span id="ai-board-count" class="font-bold text-rose-300">0</span>
+                        <div>
+                            <div class="font-extrabold text-xs text-rose-400">LV.99 魔王</div>
+                            <div class="text-xs font-bold text-slate-100">AI (赤)</div>
                         </div>
                     </div>
+                    <div class="text-xs text-slate-300 space-y-1.5">
+                        <div class="flex justify-between bg-slate-950/60 p-1.5 rounded border border-rose-500/20">
+                            <span>戦場の駒:</span> <b id="ai-board-count" class="text-rose-300 text-sm font-bold">0</b>
+                        </div>
+                        <div class="flex justify-between bg-slate-950/60 p-1.5 rounded border border-rose-500/20">
+                            <span>控室の駒:</span> <b id="ai-hand-count" class="text-amber-400 text-sm font-bold">9</b>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Settings & Controls Panel -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">AI難易度</label>
-                    <select id="difficulty-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
-                        <option value="easy">初級（カジュアル）</option>
-                        <option value="medium" selected>中級（標準思考）</option>
-                        <option value="hard">上級（本格ミニマックス）</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-400 mb-1.5">手番選択</label>
-                    <select id="first-turn-select" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
-                        <option value="human" selected>先攻 (あなた)</option>
-                        <option value="ai">後攻 (AIが先攻)</option>
-                        <option value="random">ランダム</option>
-                    </select>
-                </div>
-
-                <div class="pt-2 flex gap-2">
-                    <button id="btn-undo" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fa-solid fa-rotate-left"></i> 一手戻す
+            <!-- Action Controls Panel -->
+            <div class="rpg-window rounded-2xl p-4 shadow-xl space-y-3">
+                <h2 class="text-xs font-extrabold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> 冒険コマンド
+                </h2>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btn-undo" class="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border-2 border-amber-600/50 text-xs font-bold text-amber-200 transition flex items-center justify-center gap-2 shadow">
+                        <i class="fa-solid fa-rotate-left text-amber-400"></i> 時を戻す
                     </button>
-                    <button id="btn-hint" class="flex-1 py-2 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-400 rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5">
-                        <i class="fa-solid fa-lightbulb"></i> ヒント
+                    <button id="btn-hint" class="py-2.5 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border-2 border-amber-400 text-xs font-bold text-amber-300 transition flex items-center justify-center gap-2 shadow">
+                        <i class="fa-solid fa-eye text-amber-400"></i> 助言(ヒント)
                     </button>
                 </div>
-            </div>
 
-            <!-- Move History Log -->
-            <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl hidden lg:block">
-                <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">対局履歴</div>
-                <div id="move-history" class="h-32 overflow-y-auto text-xs text-slate-400 space-y-1 pr-1 font-mono">
-                    <div class="text-slate-500 italic">対局が開始されました</div>
+                <button id="btn-new-game" class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-700 to-indigo-800 hover:from-amber-600 hover:to-indigo-700 border-2 border-amber-400 text-xs font-extrabold text-white transition flex items-center justify-center gap-2 shadow-lg">
+                    <i class="fa-solid fa-arrows-rotate"></i> 新規対局設定
+                </button>
+
+                <!-- Hidden form controls synced with RPG modal -->
+                <div class="hidden">
+                    <select id="difficulty-select">
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                    <select id="easy-tutorial-select">
+                        <option value="on">On</option>
+                        <option value="off">Off</option>
+                    </select>
+                    <div id="medium-hint-container">
+                        <select id="medium-hint-select">
+                            <option value="on">On</option>
+                            <option value="off">Off</option>
+                        </select>
+                    </div>
+                    <select id="first-turn-select">
+                        <option value="human">Human</option>
+                        <option value="ai">AI</option>
+                        <option value="random">Random</option>
+                    </select>
                 </div>
             </div>
 
+            <!-- RPG History Log -->
+            <div class="rpg-window rounded-2xl p-4 shadow-xl flex-1 min-h-[140px] max-h-[220px] flex flex-col">
+                <h2 class="text-xs font-extrabold uppercase tracking-wider text-amber-400 mb-2 flex items-center gap-2">
+                    <i class="fa-solid fa-book text-amber-400"></i> 戦闘の記録
+                </h2>
+                <div id="move-history" class="text-xs text-slate-300 overflow-y-auto space-y-1 flex-1 pr-1 font-medium">
+                    <!-- Logs dynamically appended here -->
+                </div>
+            </div>
         </div>
 
-        <div class="flex-1 flex justify-center items-center w-full max-w-[580px]">
-            <div class="board-container relative bg-slate-900/90 rounded-3xl border border-slate-800/80 p-4 sm:p-8 shadow-2xl shadow-indigo-950/50 flex items-center justify-center">
-                
-                <!-- SVG Board Graphics -->
-                <svg id="game-board-svg" viewBox="0 0 600 600" class="w-full h-full select-none">
+        <!-- Board & Message Column -->
+        <div class="lg:col-span-8 flex flex-col items-center gap-4">
+            <!-- SVG Game Board Container -->
+            <div class="board-container relative rpg-window rounded-3xl p-4 shadow-2xl flex items-center justify-center">
+                <svg viewBox="0 0 600 600" class="w-full h-full select-none" id="game-board">
                     <defs>
-                        <!-- Glow filters & Gradients -->
-                        <filter id="glow-blue" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="6" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                        <filter id="glow-red" x="-20%" y="-20%" width="140%" height="140%">
-                            <feGaussianBlur stdDeviation="6" result="blur" />
-                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                        </filter>
-                        
-                        <radialGradient id="grad-human" cx="35%" cy="35%" r="65%">
-                            <stop offset="0%" stop-color="#818cf8" />
-                            <stop offset="60%" stop-color="#4f46e5" />
-                            <stop offset="100%" stop-color="#312e81" />
-                        </radialGradient>
-                        <radialGradient id="grad-ai" cx="35%" cy="35%" r="65%">
-                            <stop offset="0%" stop-color="#fb7185" />
-                            <stop offset="60%" stop-color="#e11d48" />
-                            <stop offset="100%" stop-color="#881337" />
-                        </radialGradient>
+                        <!-- Node Gradient -->
                         <radialGradient id="grad-node" cx="50%" cy="50%" r="50%">
-                            <stop offset="0%" stop-color="#334155" />
+                            <stop offset="0%" stop-color="#475569" />
                             <stop offset="100%" stop-color="#0f172a" />
+                        </radialGradient>
+                        <!-- Human Piece Gradient (Hero Blue Magic) -->
+                        <radialGradient id="grad-human" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#a5b4fc" />
+                            <stop offset="60%" stop-color="#4338ca" />
+                            <stop offset="100%" stop-color="#1e1b4b" />
+                        </radialGradient>
+                        <!-- AI Piece Gradient (Demon Red Magic) -->
+                        <radialGradient id="grad-ai" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stop-color="#fca5a5" />
+                            <stop offset="60%" stop-color="#b91c1c" />
+                            <stop offset="100%" stop-color="#450a0a" />
                         </radialGradient>
                     </defs>
 
-                    <!-- Board Lines -->
-                    <g id="board-lines" stroke="#475569" stroke-width="5" stroke-linecap="round">
-                        <!-- Outer Square -->
-                        <rect x="50" y="50" width="500" height="500" fill="none" rx="8"/>
-                        <!-- Middle Square -->
-                        <rect x="130" y="130" width="340" height="340" fill="none" rx="6"/>
-                        <!-- Inner Square -->
-                        <rect x="210" y="210" width="180" height="180" fill="none" rx="4"/>
-                        
-                        <!-- Connecting Lines -->
-                        <line x1="300" y1="50" x2="300" y2="210" />
-                        <line x1="300" y1="390" x2="300" y2="550" />
-                        <line x1="50" y1="300" x2="210" y2="300" />
-                        <line x1="390" y1="300" x2="550" y2="300" />
-                    </g>
+                    <!-- RPG Magic Board Lines -->
+                    <rect x="50" y="50" width="500" height="500" fill="none" stroke="#b45309" stroke-width="5" rx="4" opacity="0.85" />
+                    <rect x="130" y="130" width="340" height="340" fill="none" stroke="#b45309" stroke-width="5" rx="4" opacity="0.85" />
+                    <rect x="210" y="210" width="180" height="180" fill="none" stroke="#b45309" stroke-width="5" rx="4" opacity="0.85" />
 
-                    <!-- Mill Highlighting Lines Layer -->
+                    <!-- Connecting Lines -->
+                    <line x1="300" y1="50" x2="300" y2="210" stroke="#b45309" stroke-width="5" opacity="0.85" />
+                    <line x1="300" y1="390" x2="300" y2="550" stroke="#b45309" stroke-width="5" opacity="0.85" />
+                    <line x1="50" y1="300" x2="210" y2="300" stroke="#b45309" stroke-width="5" opacity="0.85" />
+                    <line x1="390" y1="300" x2="550" y2="300" stroke="#b45309" stroke-width="5" opacity="0.85" />
+
+                    <!-- Dynamic Layers -->
                     <g id="mill-lines-layer"></g>
-
-                    <!-- Valid Moves Highlights Layer -->
-                    <g id="valid-moves-layer"></g>
-
-                    <!-- Nodes (24 Interactive Points) -->
                     <g id="board-nodes-layer"></g>
-
-                    <!-- Pieces Layer -->
+                    <g id="valid-moves-layer"></g>
                     <g id="board-pieces-layer"></g>
+                    <g id="hint-layer"></g>
                 </svg>
+            </div>
+
+            <!-- RPG Villager Wipe & Speech Bubble (Positioned BELOW the Board) -->
+            <div id="villager-guide-container" class="w-full rpg-window rounded-2xl p-4 flex items-center sm:items-end gap-3 sm:gap-4 shadow-2xl relative">
+                
+                <!-- Villager Wipe Icon (Bottom Left) -->
+                <div class="relative flex-shrink-0">
+                    <div class="w-16 h-16 sm:w-20 sm:h-20 bg-slate-950 border-2 border-amber-400 rounded-xl p-1 shadow-lg relative overflow-hidden flex items-center justify-center">
+                        <svg viewBox="0 0 16 16" class="w-full h-full pixel-art">
+                            <!-- Hair/Hat (Green Cap) -->
+                            <rect x="4" y="1" width="8" height="3" fill="#15803d" />
+                            <rect x="3" y="3" width="10" height="2" fill="#166534" />
+                            <!-- Face -->
+                            <rect x="4" y="4" width="8" height="6" fill="#fde047" opacity="0.85" />
+                            <rect x="4" y="5" width="8" height="5" fill="#fef08a" />
+                            <!-- Eyes -->
+                            <rect x="5" y="7" width="2" height="2" fill="#1e293b" />
+                            <rect x="9" y="7" width="2" height="2" fill="#1e293b" />
+                            <!-- Mustache -->
+                            <rect x="5" y="9" width="6" height="2" fill="#b45309" />
+                            <!-- Tunic -->
+                            <rect x="3" y="10" width="10" height="6" fill="#78350f" />
+                            <rect x="6" y="10" width="4" height="6" fill="#fbbf24" />
+                        </svg>
+                    </div>
+                    <span class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-amber-500 text-slate-950 font-extrabold text-[10px] px-2 py-0.2 rounded border border-amber-300 whitespace-nowrap shadow">
+                        村人ガイド
+                    </span>
+                </div>
+
+                <!-- Speech Bubble (Right) -->
+                <div class="flex-1 relative bg-slate-800/90 border-2 border-amber-400/80 rounded-2xl p-3 sm:p-4 text-slate-100 shadow-md">
+                    <!-- Speech Bubble Pointer (Left Arrow) -->
+                    <div class="absolute top-5 -left-3 w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-amber-400/80 border-b-8 border-b-transparent"></div>
+                    <div class="absolute top-5 -left-[10px] w-0 h-0 border-t-8 border-t-transparent border-r-8 border-r-slate-800 border-b-8 border-b-transparent"></div>
+
+                    <div class="flex items-center justify-between gap-2 mb-1.5 border-b border-amber-500/30 pb-1">
+                        <span id="phase-badge" class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-extrabold shadow">
+                            配置フェーズ
+                        </span>
+                        <span class="text-[11px] font-bold text-amber-400/80 tracking-wider flex items-center gap-1">
+                            <i class="fa-solid fa-comment-dots text-amber-400"></i> 初心者助言
+                        </span>
+                    </div>
+
+                    <div id="status-message" class="text-xs sm:text-sm font-semibold leading-relaxed text-amber-200">
+                        「ようこそ！まずは盤面の空いている交差点に駒を置くところから始めよう！」
+                    </div>
+                </div>
 
             </div>
+
         </div>
     </main>
+
+    <!-- RPG Villager Welcome & Settings Modal -->
+    <div id="rpg-welcome-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="rpg-window max-w-xl w-full rounded-2xl p-5 sm:p-7 text-slate-100 flex flex-col gap-5 relative">
+            
+            <!-- Villager Avatar & Dialogue Header -->
+            <div class="flex items-start gap-4 border-b border-amber-500/30 pb-4">
+                <!-- Pixel Art Villager SVG -->
+                <div class="w-20 h-20 sm:w-24 sm:h-24 bg-slate-900 border-2 border-amber-400/60 rounded-xl p-1 flex-shrink-0 flex items-center justify-center shadow-lg relative overflow-hidden">
+                    <svg viewBox="0 0 16 16" class="w-full h-full pixel-art">
+                        <!-- Hair/Hat (Green Cap) -->
+                        <rect x="4" y="1" width="8" height="3" fill="#15803d" />
+                        <rect x="3" y="3" width="10" height="2" fill="#166534" />
+                        <!-- Skin Face -->
+                        <rect x="4" y="4" width="8" height="6" fill="#fde047" opacity="0.85" />
+                        <rect x="4" y="5" width="8" height="5" fill="#fef08a" />
+                        <!-- Eyes -->
+                        <rect x="5" y="7" width="2" height="2" fill="#1e293b" />
+                        <rect x="9" y="7" width="2" height="2" fill="#1e293b" />
+                        <!-- Mustache / Beard -->
+                        <rect x="5" y="9" width="6" height="2" fill="#b45309" />
+                        <!-- Body / Clothes (Brown Tunic) -->
+                        <rect x="3" y="10" width="10" height="6" fill="#78350f" />
+                        <rect x="6" y="10" width="4" height="6" fill="#fbbf24" />
+                    </svg>
+                </div>
+
+                <div class="flex-1">
+                    <div class="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1 mb-1">
+                        <i class="fa-solid fa-scroll"></i> 宿場町の村人
+                    </div>
+                    <div id="rpg-dialogue" class="text-sm sm:text-base font-semibold leading-snug text-slate-200">
+                        「ようこそ！旅の人よ。古代ローマから続く試練の盤上戦『ナインメンズモリス』に挑戦するのですね。冒険の準備を整えてくだされ！」
+                    </div>
+                </div>
+            </div>
+
+            <!-- RPG Command Selection Form -->
+            <div class="space-y-4">
+                <!-- 1. Difficulty Option -->
+                <div>
+                    <label class="block text-xs font-bold text-amber-300 uppercase tracking-wider mb-2">
+                        ⚔️ 試練の難易度 (クラス選択)
+                    </label>
+                    <div class="grid grid-cols-3 gap-2" id="rpg-diff-group">
+                        <button type="button" data-val="easy" class="rpg-btn selected text-left p-2.5 rounded-xl text-xs font-medium">
+                            <div class="font-bold text-amber-300 text-sm">見習い勇者</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">初級 (解説 & 自動ヒント)</div>
+                        </button>
+                        <button type="button" data-val="medium" class="rpg-btn text-left p-2.5 rounded-xl text-xs font-medium">
+                            <div class="font-bold text-indigo-300 text-sm">熟練の騎士</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">中級 (手順なし・ヒント選択)</div>
+                        </button>
+                        <button type="button" data-val="hard" class="rpg-btn text-left p-2.5 rounded-xl text-xs font-medium">
+                            <div class="font-bold text-rose-300 text-sm">伝説の英雄</div>
+                            <div class="text-[10px] text-slate-400 mt-0.5">上級 (ガチ対戦・ヒント不可)</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Easy Tutorial Option (Conditional) -->
+                <div id="rpg-easy-tutorial-box" class="bg-slate-900/80 p-3 rounded-xl border border-amber-500/30 flex justify-between items-center text-xs">
+                    <span class="text-amber-300 font-semibold">📜 村人のチュートリアル解説:</span>
+                    <div class="flex gap-2">
+                        <button type="button" id="btn-rpg-tut-on" class="px-3 py-1 rounded-lg bg-amber-600 text-white font-bold border border-amber-400">あり (ルール解説)</button>
+                        <button type="button" id="btn-rpg-tut-off" class="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700">なし</button>
+                    </div>
+                </div>
+
+                <!-- Medium Hint Option (Conditional) -->
+                <div id="rpg-medium-hint-box" class="hidden bg-slate-900/80 p-3 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                    <span class="text-amber-300 font-semibold">🔮 熟練のヒント機能:</span>
+                    <div class="flex gap-2">
+                        <button type="button" id="btn-rpg-hint-on" class="px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold border border-indigo-400">有効</button>
+                        <button type="button" id="btn-rpg-hint-off" class="px-3 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700">無効</button>
+                    </div>
+                </div>
+
+                <!-- 2. Turn Order Selection -->
+                <div>
+                    <label class="block text-xs font-bold text-amber-300 uppercase tracking-wider mb-2">
+                        🚩 行動順 (先攻 / 後攻)
+                    </label>
+                    <div class="grid grid-cols-3 gap-2" id="rpg-turn-group">
+                        <button type="button" data-val="human" class="rpg-btn selected text-center p-2.5 rounded-xl text-xs font-bold text-slate-200">
+                            先手必勝 (先攻)
+                        </button>
+                        <button type="button" data-val="ai" class="rpg-btn text-center p-2.5 rounded-xl text-xs font-bold text-slate-200">
+                            カウンター (後攻)
+                        </button>
+                        <button type="button" data-val="random" class="rpg-btn text-center p-2.5 rounded-xl text-xs font-bold text-slate-200">
+                            運に任せる (ランダム)
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Game Button -->
+            <div class="pt-2 border-t border-amber-500/30 flex justify-end">
+                <button id="btn-rpg-start" class="w-full py-3.5 px-6 rounded-xl bg-gradient-to-r from-amber-500 via-amber-600 to-indigo-600 hover:from-amber-400 hover:to-indigo-500 text-white font-extrabold text-base shadow-xl shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center gap-2">
+                    <span>⚔️ 冒険の旅へ！（対局開始）</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="rules-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
@@ -382,7 +572,8 @@
         selectedNode: null,
         history: [],
         winner: null,
-        isThinkingAI: false
+        isThinkingAI: false,
+        activeHint: null // Store visual hint data { type: 'place'|'move'|'remove', node, from, to }
     };
 
     // DOM Elements
@@ -394,12 +585,16 @@
         aiHandCount: document.getElementById('ai-hand-count'),
         aiBoardCount: document.getElementById('ai-board-count'),
         difficultySelect: document.getElementById('difficulty-select'),
+        easyTutorialSelect: document.getElementById('easy-tutorial-select'),
+        mediumHintContainer: document.getElementById('medium-hint-container'),
+        mediumHintSelect: document.getElementById('medium-hint-select'),
         firstTurnSelect: document.getElementById('first-turn-select'),
         moveHistory: document.getElementById('move-history'),
         nodesLayer: document.getElementById('board-nodes-layer'),
         piecesLayer: document.getElementById('board-pieces-layer'),
         validLayer: document.getElementById('valid-moves-layer'),
         millLinesLayer: document.getElementById('mill-lines-layer'),
+        hintLayer: document.getElementById('hint-layer'),
         btnUndo: document.getElementById('btn-undo'),
         btnHint: document.getElementById('btn-hint'),
         btnNewGame: document.getElementById('btn-new-game'),
@@ -413,27 +608,159 @@
         gameoverIconContainer: document.getElementById('gameover-icon-container'),
         btnRestartGame: document.getElementById('btn-restart-game'),
         playerCardHuman: document.getElementById('player-card-human'),
-        playerCardAi: document.getElementById('player-card-ai')
+        playerCardAi: document.getElementById('player-card-ai'),
+
+        // RPG Modal Elements & Villager Tutorial
+        rpgModal: document.getElementById('rpg-welcome-modal'),
+        rpgStartBtn: document.getElementById('btn-rpg-start'),
+        rpgDiffGroup: document.getElementById('rpg-diff-group'),
+        rpgTurnGroup: document.getElementById('rpg-turn-group'),
+        rpgEasyTutorialBox: document.getElementById('rpg-easy-tutorial-box'),
+        btnRpgTutOn: document.getElementById('btn-rpg-tut-on'),
+        btnRpgTutOff: document.getElementById('btn-rpg-tut-off'),
+        rpgMediumHintBox: document.getElementById('rpg-medium-hint-box'),
+        btnRpgHintOn: document.getElementById('btn-rpg-hint-on'),
+        btnRpgHintOff: document.getElementById('btn-rpg-hint-off'),
+        btnOpenRpgSetup: document.getElementById('btn-open-rpg-setup'),
+        rpgDialogue: document.getElementById('rpg-dialogue'),
+        villagerGuideContainer: document.getElementById('villager-guide-container')
     };
+
+    // RPG Setup Variables
+    let selectedRpgDiff = 'easy';
+    let selectedRpgTurn = 'human';
+    let selectedRpgTut = 'on';
+    let selectedRpgHint = 'on';
+
+    function initRpgModalEvents() {
+        // Difficulty Buttons Selection
+        elements.rpgDiffGroup.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.rpgDiffGroup.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedRpgDiff = btn.getAttribute('data-val');
+                elements.difficultySelect.value = selectedRpgDiff;
+
+                if (selectedRpgDiff === 'easy') {
+                    elements.rpgEasyTutorialBox.classList.remove('hidden');
+                    elements.rpgMediumHintBox.classList.add('hidden');
+                } else if (selectedRpgDiff === 'medium') {
+                    elements.rpgEasyTutorialBox.classList.add('hidden');
+                    elements.rpgMediumHintBox.classList.remove('hidden');
+                } else {
+                    elements.rpgEasyTutorialBox.classList.add('hidden');
+                    elements.rpgMediumHintBox.classList.add('hidden');
+                }
+                updateVillagerDialogue();
+            });
+        });
+
+        // Easy Tutorial Toggle
+        elements.btnRpgTutOn.addEventListener('click', () => {
+            selectedRpgTut = 'on';
+            elements.easyTutorialSelect.value = 'on';
+            elements.btnRpgTutOn.className = "px-3 py-1 rounded-lg bg-amber-600 text-white font-bold border border-amber-400";
+            elements.btnRpgTutOff.className = "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700";
+        });
+        elements.btnRpgTutOff.addEventListener('click', () => {
+            selectedRpgTut = 'off';
+            elements.easyTutorialSelect.value = 'off';
+            elements.btnRpgTutOff.className = "px-3 py-1 rounded-lg bg-amber-600 text-white font-bold border border-amber-400";
+            elements.btnRpgTutOn.className = "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700";
+        });
+
+        // Turn Buttons Selection
+        elements.rpgTurnGroup.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                elements.rpgTurnGroup.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedRpgTurn = btn.getAttribute('data-val');
+                elements.firstTurnSelect.value = selectedRpgTurn;
+                updateVillagerDialogue();
+            });
+        });
+
+        // Medium Hint Toggle
+        elements.btnRpgHintOn.addEventListener('click', () => {
+            selectedRpgHint = 'on';
+            elements.mediumHintSelect.value = 'on';
+            elements.btnRpgHintOn.className = "px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold border border-indigo-400";
+            elements.btnRpgHintOff.className = "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700";
+        });
+        elements.btnRpgHintOff.addEventListener('click', () => {
+            selectedRpgHint = 'off';
+            elements.mediumHintSelect.value = 'off';
+            elements.btnRpgHintOff.className = "px-3 py-1 rounded-lg bg-indigo-600 text-white font-bold border border-indigo-400";
+            elements.btnRpgHintOn.className = "px-3 py-1 rounded-lg bg-slate-800 text-slate-400 border border-slate-700";
+        });
+
+        // Start Journey Button
+        elements.rpgStartBtn.addEventListener('click', () => {
+            elements.rpgModal.classList.add('hidden');
+            resetGame();
+        });
+
+        elements.btnOpenRpgSetup.addEventListener('click', () => {
+            elements.rpgModal.classList.remove('hidden');
+        });
+    }
+
+    function updateVillagerDialogue() {
+        let msg = "「";
+        if (selectedRpgDiff === 'easy') {
+            msg += "見習い勇者殿ですね！光るナビゲーション（手筋ヒント）が旅を助けてくれますぞ。";
+        } else if (selectedRpgDiff === 'medium') {
+            msg += "熟練の騎士殿！己の直感と戦術で挑む手応えのある戦いになりますな。";
+        } else {
+            msg += "なんと！伝説の英雄クラスに挑むとな！？容赦なきAIの思考に耐えられますかな…！";
+        }
+
+        if (selectedRpgTurn === 'human') {
+            msg += " 先手を打って勝利を掴み取ってください！」";
+        } else if (selectedRpgTurn === 'ai') {
+            msg += " AIに先手を譲り、後攻から華麗に逆転を狙うのですね！」";
+        } else {
+            msg += " 運命のダイスに従い、手番を神に委ねましょう！」";
+        }
+
+        elements.rpgDialogue.textContent = msg;
+    }
 
     // Initialize Game Board SVG
     function initSVG() {
         elements.nodesLayer.innerHTML = '';
         
         NODES.forEach(node => {
-            // Interactive SVG Circles for Nodes
+            const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            g.setAttribute('class', 'node-group cursor-pointer');
+            g.setAttribute('data-id', node.id);
+
+            // Large transparent hit area for easy touch & click
+            const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            hitArea.setAttribute('cx', node.x);
+            hitArea.setAttribute('cy', node.y);
+            hitArea.setAttribute('r', '28');
+            hitArea.setAttribute('fill', 'transparent');
+            hitArea.setAttribute('class', 'node-circle');
+
+            // Visible Interactive SVG Circle for Node
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', node.x);
             circle.setAttribute('cy', node.y);
-            circle.setAttribute('r', '14');
+            circle.setAttribute('r', '15');
             circle.setAttribute('fill', 'url(#grad-node)');
             circle.setAttribute('stroke', '#475569');
             circle.setAttribute('stroke-width', '3');
             circle.setAttribute('class', 'node-circle');
-            circle.setAttribute('data-id', node.id);
             
-            circle.addEventListener('click', () => handleNodeClick(node.id));
-            elements.nodesLayer.appendChild(circle);
+            g.appendChild(hitArea);
+            g.appendChild(circle);
+            
+            g.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleNodeClick(node.id);
+            });
+            elements.nodesLayer.appendChild(g);
         });
 
         render();
@@ -459,7 +786,8 @@
             selectedNode: null,
             history: [],
             winner: null,
-            isThinkingAI: false
+            isThinkingAI: false,
+            activeHint: null
         };
         
         const turnText = startingTurn === HUMAN ? "あなた (青)" : "AI (赤)";
@@ -471,6 +799,20 @@
             gameState.isThinkingAI = true;
             render();
             setTimeout(executeAIMove, 600);
+        }
+    }
+
+    // Difficulty and Feature Rules Helpers
+    function getDifficultyConfig() {
+        const diff = elements.difficultySelect.value;
+        if (diff === 'easy') {
+            const tutOn = elements.easyTutorialSelect.value === 'on';
+            return { depth: 1, showGuide: true, showTutorial: tutOn, allowHint: true, autoHint: true };
+        } else if (diff === 'medium') {
+            const hintOn = elements.mediumHintSelect.value === 'on';
+            return { depth: 2, showGuide: false, showTutorial: false, allowHint: hintOn, autoHint: false };
+        } else { // 'hard'
+            return { depth: 4, showGuide: false, showTutorial: false, allowHint: false, autoHint: false };
         }
     }
 
@@ -597,6 +939,9 @@
     function handleNodeClick(nodeId) {
         if (gameState.winner || gameState.isThinkingAI || gameState.turn !== HUMAN) return;
 
+        // Clear active visual hint upon player interaction
+        gameState.activeHint = null;
+
         // Mode 1: Removing opponent piece after forming a mill
         if (gameState.mustRemove) {
             const removable = getRemovableOpponentNodes(gameState.board, AI);
@@ -688,6 +1033,7 @@
     }
 
     function switchTurn() {
+        gameState.activeHint = null;
         const winner = checkGameOver();
         if (winner) {
             endGame(winner, winner === HUMAN ? "勝利しました！" : "AIの勝利です。");
@@ -708,143 +1054,266 @@
     function executeAIMove() {
         if (gameState.winner) return;
 
-        const difficulty = elements.difficultySelect.value;
-        const depth = difficulty === 'easy' ? 1 : (difficulty === 'medium' ? 2 : 4);
+        try {
+            const config = getDifficultyConfig();
+            const depth = config.depth;
 
-        if (gameState.mustRemove) {
-            // AI must pick human piece to remove
-            const removable = getRemovableOpponentNodes(gameState.board, HUMAN);
-            // Choose best piece to break human's potential mills
-            let bestPick = removable[0];
-            let bestScore = -Infinity;
+            if (gameState.mustRemove) {
+                // AI must pick human piece to remove
+                const removable = getRemovableOpponentNodes(gameState.board, HUMAN);
+                let bestPick = removable[0];
+                let bestScore = -Infinity;
 
-            removable.forEach(idx => {
-                const tempBoard = [...gameState.board];
-                tempBoard[idx] = EMPTY;
-                const score = evaluateBoard(tempBoard, AI);
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestPick = idx;
+                removable.forEach(idx => {
+                    const tempBoard = [...gameState.board];
+                    tempBoard[idx] = EMPTY;
+                    const score = evaluateBoard(tempBoard, AI);
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestPick = idx;
+                    }
+                });
+
+                gameState.board[bestPick] = EMPTY;
+                gameState.mustRemove = false;
+                logMove(`AIがあなたの駒 (${bestPick}) を除去しました。`);
+
+                const winner = checkGameOver();
+                if (winner) {
+                    endGame(winner, "AIに駒を削られ負けました。");
+                    return;
                 }
-            });
 
-            gameState.board[bestPick] = EMPTY;
-            gameState.mustRemove = false;
-            logMove(`AIがあなたの駒 (${bestPick}) を除去しました。`);
-
-            const winner = checkGameOver();
-            if (winner) {
-                endGame(winner, "AIに駒を削られ負けました。");
+                gameState.isThinkingAI = false;
+                switchTurn();
                 return;
             }
 
-            gameState.isThinkingAI = false;
-            switchTurn();
-            return;
-        }
+            // Placing Phase AI
+            if (gameState.phase === 'placing') {
+                const bestNode = getBestPlaceMove(depth);
+                gameState.board[bestNode] = AI;
+                gameState.hand.A--;
+                logMove(`AIの配置: ノード ${bestNode}`);
 
-        // Placing Phase AI
-        if (gameState.phase === 'placing') {
-            const bestNode = getBestPlaceMove(depth);
-            gameState.board[bestNode] = AI;
-            gameState.hand.A--;
-            logMove(`AIの配置: ノード ${bestNode}`);
-
-            if (checkMill(gameState.board, bestNode, AI)) {
-                gameState.mustRemove = true;
-                logMove("AIのミルが成立しました！");
-                render();
-                setTimeout(executeAIMove, 700); // Chain removal step
-                return;
-            }
-
-            checkPhaseTransition();
-            gameState.isThinkingAI = false;
-            switchTurn();
-            return;
-        }
-
-        // Moving Phase AI
-        if (gameState.phase === 'moving') {
-            const move = getBestMoveAI(depth);
-            if (move) {
-                gameState.board[move.from] = EMPTY;
-                gameState.board[move.to] = AI;
-                logMove(`AIの移動: ${move.from} ➔ ${move.to}`);
-
-                if (checkMill(gameState.board, move.to, AI)) {
+                if (checkMill(gameState.board, bestNode, AI)) {
                     gameState.mustRemove = true;
                     logMove("AIのミルが成立しました！");
                     render();
                     setTimeout(executeAIMove, 700);
                     return;
                 }
+
+                checkPhaseTransition();
+                gameState.isThinkingAI = false;
+                switchTurn();
+                return;
             }
+
+            // Moving Phase AI
+            if (gameState.phase === 'moving') {
+                const move = getBestMoveAI(depth);
+                if (move) {
+                    gameState.board[move.from] = EMPTY;
+                    gameState.board[move.to] = AI;
+                    logMove(`AIの移動: ${move.from} ➔ ${move.to}`);
+
+                    if (checkMill(gameState.board, move.to, AI)) {
+                        gameState.mustRemove = true;
+                        logMove("AIのミルが成立しました！");
+                        render();
+                        setTimeout(executeAIMove, 700);
+                        return;
+                    }
+                }
+                gameState.isThinkingAI = false;
+                switchTurn();
+            }
+        } catch (err) {
+            console.error("AI execution error:", err);
             gameState.isThinkingAI = false;
-            switchTurn();
+            render();
         }
     }
 
-    // AI Evaluation Function
-    function evaluateBoard(board, player) {
-        const opponent = player === AI ? HUMAN : AI;
+    // --- AI ENGINE & MINIMAX LOGIC ---
 
-        // Piece count weights
-        const myBoardCount = board.filter(c => c === player).length;
-        const oppBoardCount = board.filter(c => c === opponent).length;
-        let score = (myBoardCount - oppBoardCount) * 100;
+    // Board evaluation function for Minimax
+    function evaluateBoard(board, perspectivePlayer) {
+        const opponent = perspectivePlayer === HUMAN ? AI : HUMAN;
+        let score = 0;
 
-        // Mill count evaluation
-        let myMills = 0;
-        let oppMills = 0;
+        // 1. Piece count weight
+        const pCount = board.filter(cell => cell === perspectivePlayer).length;
+        const oCount = board.filter(cell => cell === opponent).length;
+        score += (pCount - oCount) * 100;
+
+        // 2. Completed Mills
+        let pMills = 0;
+        let oMills = 0;
         MILL_LINES.forEach(line => {
-            if (line.every(i => board[i] === player)) myMills++;
-            if (line.every(i => board[i] === opponent)) oppMills++;
+            if (line.every(idx => board[idx] === perspectivePlayer)) pMills++;
+            if (line.every(idx => board[idx] === opponent)) oMills++;
         });
-        score += (myMills - oppMills) * 45;
+        score += (pMills - oMills) * 45;
 
-        // Blocked moves evaluation
-        if (gameState.phase === 'moving') {
-            let myMobility = 0;
-            let oppMobility = 0;
-            for (let i = 0; i < 24; i++) {
-                if (board[i] === player) myMobility += getValidMovesForNode(board, i, player).length;
-                if (board[i] === opponent) oppMobility += getValidMovesForNode(board, i, opponent).length;
+        // 3. Potential Mills (2 pieces + 1 empty)
+        MILL_LINES.forEach(line => {
+            const pPieces = line.filter(idx => board[idx] === perspectivePlayer).length;
+            const oPieces = line.filter(idx => board[idx] === opponent).length;
+            const emptyPieces = line.filter(idx => board[idx] === EMPTY).length;
+
+            if (pPieces === 2 && emptyPieces === 1) score += 15;
+            if (oPieces === 2 && emptyPieces === 1) score -= 15;
+        });
+
+        // 4. Mobility / Number of legal moves
+        let pMoves = 0;
+        let oMoves = 0;
+        for (let i = 0; i < 24; i++) {
+            if (board[i] === perspectivePlayer) {
+                pMoves += ADJACENCY[i].filter(adj => board[adj] === EMPTY).length;
             }
-            score += (myMobility - oppMobility) * 5;
+            if (board[i] === opponent) {
+                oMoves += ADJACENCY[i].filter(adj => board[adj] === EMPTY).length;
+            }
         }
+        score += (pMoves - oMoves) * 5;
+
+        // 5. Intersection Node Bonus
+        const intersectionNodes = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23];
+        intersectionNodes.forEach(nodeIdx => {
+            if (board[nodeIdx] === perspectivePlayer) score += 3;
+            if (board[nodeIdx] === opponent) score -= 3;
+        });
 
         return score;
     }
 
+    // Minimax Search with Alpha-Beta Pruning
+    function minimax(board, depth, alpha, beta, isMaximizing, hand = { H: 0, A: 0 }, phase = 'moving') {
+        if (depth === 0) {
+            return evaluateBoard(board, AI);
+        }
+
+        const currentPlayer = isMaximizing ? AI : HUMAN;
+
+        if (phase === 'placing') {
+            const emptyNodes = [];
+            for (let i = 0; i < 24; i++) {
+                if (board[i] === EMPTY) emptyNodes.push(i);
+            }
+
+            if (emptyNodes.length === 0) return evaluateBoard(board, AI);
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let node of emptyNodes) {
+                    const nextBoard = [...board];
+                    nextBoard[node] = AI;
+                    let evalVal = evaluateBoard(nextBoard, AI);
+
+                    if (checkMill(nextBoard, node, AI)) evalVal += 150;
+
+                    maxEval = Math.max(maxEval, evalVal);
+                    alpha = Math.max(alpha, evalVal);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let node of emptyNodes) {
+                    const nextBoard = [...board];
+                    nextBoard[node] = HUMAN;
+                    let evalVal = evaluateBoard(nextBoard, AI);
+
+                    if (checkMill(nextBoard, node, HUMAN)) evalVal -= 150;
+
+                    minEval = Math.min(minEval, evalVal);
+                    beta = Math.min(beta, evalVal);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        } else {
+            let moves = [];
+            for (let i = 0; i < 24; i++) {
+                if (board[i] === currentPlayer) {
+                    const validTargets = getValidMovesForNode(board, i, currentPlayer);
+                    validTargets.forEach(to => moves.push({ from: i, to }));
+                }
+            }
+
+            if (moves.length === 0) return isMaximizing ? -10000 : 10000;
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (let move of moves) {
+                    const nextBoard = [...board];
+                    nextBoard[move.from] = EMPTY;
+                    nextBoard[move.to] = AI;
+
+                    let evalVal = evaluateBoard(nextBoard, AI);
+                    if (checkMill(nextBoard, move.to, AI)) evalVal += 150;
+
+                    maxEval = Math.max(maxEval, evalVal);
+                    alpha = Math.max(alpha, evalVal);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let move of moves) {
+                    const nextBoard = [...board];
+                    nextBoard[move.from] = EMPTY;
+                    nextBoard[move.to] = HUMAN;
+
+                    let evalVal = evaluateBoard(nextBoard, AI);
+                    if (checkMill(nextBoard, move.to, HUMAN)) evalVal -= 150;
+
+                    minEval = Math.min(minEval, evalVal);
+                    beta = Math.min(beta, evalVal);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+    }
+
+    // AI Placement Selector
     function getBestPlaceMove(depth) {
         const emptyNodes = [];
         for (let i = 0; i < 24; i++) {
             if (gameState.board[i] === EMPTY) emptyNodes.push(i);
         }
 
-        // Instant mill creation check
+        if (emptyNodes.length === 0) return 0;
+
+        // 1. Immediate Mill for AI
         for (let node of emptyNodes) {
-            const temp = [...gameState.board];
-            temp[node] = AI;
-            if (checkMill(temp, node, AI)) return node;
+            const tempBoard = [...gameState.board];
+            tempBoard[node] = AI;
+            if (checkMill(tempBoard, node, AI)) return node;
         }
 
-        // Instant block human mill check
+        // 2. Block Immediate Mill for HUMAN
         for (let node of emptyNodes) {
-            const temp = [...gameState.board];
-            temp[node] = HUMAN;
-            if (checkMill(temp, node, HUMAN)) return node;
+            const tempBoard = [...gameState.board];
+            tempBoard[node] = HUMAN;
+            if (checkMill(tempBoard, node, HUMAN)) return node;
         }
 
-        // Minimax heuristic choice
+        // 3. Minimax Evaluation
+        let bestNode = emptyNodes[0];
         let bestScore = -Infinity;
-        let bestNode = emptyNodes[Math.floor(Math.random() * emptyNodes.length)];
 
         emptyNodes.forEach(node => {
             const tempBoard = [...gameState.board];
             tempBoard[node] = AI;
-            const score = minimax(tempBoard, depth - 1, -Infinity, Infinity, false);
+            
+            let score = evaluateBoard(tempBoard, AI);
+            score += minimax(tempBoard, depth - 1, -Infinity, Infinity, false, gameState.hand, 'placing');
+
             if (score > bestScore) {
                 bestScore = score;
                 bestNode = node;
@@ -854,6 +1323,7 @@
         return bestNode;
     }
 
+    // AI Move Selector
     function getBestMoveAI(depth) {
         let possibleMoves = [];
         for (let i = 0; i < 24; i++) {
@@ -865,18 +1335,25 @@
 
         if (possibleMoves.length === 0) return null;
 
+        // Priority 1: Check for instant Mill completion
+        for (let move of possibleMoves) {
+            const tempBoard = [...gameState.board];
+            tempBoard[move.from] = EMPTY;
+            tempBoard[move.to] = AI;
+            if (checkMill(tempBoard, move.to, AI)) return move;
+        }
+
+        // Priority 2: Minimax Search
+        let bestMove = possibleMoves[0];
         let bestScore = -Infinity;
-        let bestMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
 
         possibleMoves.forEach(m => {
             const tempBoard = [...gameState.board];
             tempBoard[m.from] = EMPTY;
             tempBoard[m.to] = AI;
 
-            let score = 0;
-            if (checkMill(tempBoard, m.to, AI)) score += 80;
-
-            score += minimax(tempBoard, depth - 1, -Infinity, Infinity, false);
+            let score = evaluateBoard(tempBoard, AI);
+            score += minimax(tempBoard, depth - 1, -Infinity, Infinity, false, gameState.hand, 'moving');
 
             if (score > bestScore) {
                 bestScore = score;
@@ -887,224 +1364,339 @@
         return bestMove;
     }
 
-    function minimax(board, depth, alpha, beta, isMaximizing) {
-        if (depth === 0) return evaluateBoard(board, AI);
-
-        if (isMaximizing) {
-            let maxEval = -Infinity;
-            // Simplified recursive search for minimax efficiency
-            for (let i = 0; i < 24; i++) {
-                if (board[i] === EMPTY) {
-                    board[i] = AI;
-                    let evalVal = minimax(board, depth - 1, alpha, beta, false);
-                    board[i] = EMPTY;
-                    maxEval = Math.max(maxEval, evalVal);
-                    alpha = Math.max(alpha, evalVal);
-                    if (beta <= alpha) break;
+    // Calculate best move hint for Human Player
+    function calculateBestHint() {
+        if (gameState.mustRemove) {
+            const removable = getRemovableOpponentNodes(gameState.board, AI);
+            let bestRemove = removable[0];
+            let bestScore = -Infinity;
+            removable.forEach(idx => {
+                const tempBoard = [...gameState.board];
+                tempBoard[idx] = EMPTY;
+                const score = evaluateBoard(tempBoard, HUMAN);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRemove = idx;
                 }
-            }
-            return maxEval;
-        } else {
-            let minEval = Infinity;
-            for (let i = 0; i < 24; i++) {
-                if (board[i] === EMPTY) {
-                    board[i] = HUMAN;
-                    let evalVal = minimax(board, depth - 1, alpha, beta, true);
-                    board[i] = EMPTY;
-                    minEval = Math.min(minEval, evalVal);
-                    beta = Math.min(beta, evalVal);
-                    if (beta <= alpha) break;
-                }
-            }
-            return minEval;
+            });
+            return { type: 'remove', node: bestRemove };
         }
+
+        if (gameState.phase === 'placing') {
+            const emptyNodes = [];
+            for (let i = 0; i < 24; i++) {
+                if (gameState.board[i] === EMPTY) emptyNodes.push(i);
+            }
+
+            for (let node of emptyNodes) {
+                const temp = [...gameState.board];
+                temp[node] = HUMAN;
+                if (checkMill(temp, node, HUMAN)) return { type: 'place', node };
+            }
+
+            for (let node of emptyNodes) {
+                const temp = [...gameState.board];
+                temp[node] = AI;
+                if (checkMill(temp, node, AI)) return { type: 'place', node };
+            }
+
+            let bestNode = emptyNodes[0];
+            let bestScore = -Infinity;
+            emptyNodes.forEach(node => {
+                const tempBoard = [...gameState.board];
+                tempBoard[node] = HUMAN;
+                const score = minimax(tempBoard, 2, -Infinity, Infinity, false);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestNode = node;
+                }
+            });
+            return { type: 'place', node: bestNode };
+        }
+
+        if (gameState.phase === 'moving') {
+            let possibleMoves = [];
+            for (let i = 0; i < 24; i++) {
+                if (gameState.board[i] === HUMAN) {
+                    const targets = getValidMovesForNode(gameState.board, i, HUMAN);
+                    targets.forEach(to => possibleMoves.push({ from: i, to }));
+                }
+            }
+
+            if (possibleMoves.length === 0) return null;
+
+            for (let move of possibleMoves) {
+                const temp = [...gameState.board];
+                temp[move.from] = EMPTY;
+                temp[move.to] = HUMAN;
+                if (checkMill(temp, move.to, HUMAN)) return { type: 'move', from: move.from, to: move.to };
+            }
+
+            let bestMove = possibleMoves[0];
+            let bestScore = -Infinity;
+            possibleMoves.forEach(m => {
+                const tempBoard = [...gameState.board];
+                tempBoard[m.from] = EMPTY;
+                tempBoard[m.to] = HUMAN;
+                const score = minimax(tempBoard, 2, -Infinity, Infinity, false);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = m;
+                }
+            });
+            return { type: 'move', from: bestMove.from, to: bestMove.to };
+        }
+
+        return null;
     }
 
     function giveHint() {
         if (gameState.turn !== HUMAN || gameState.isThinkingAI || gameState.winner) return;
+        gameState.activeHint = calculateBestHint();
+        render();
+    }
 
-        if (gameState.mustRemove) {
-            const removable = getRemovableOpponentNodes(gameState.board, AI);
-            showStatus(`ヒント: マス [${removable.join(', ')}] のいずれかを除去してください。`, "text-amber-300");
+    function updateVillagerTutorialSpeech() {
+        const config = getDifficultyConfig();
+        
+        if (gameState.winner) {
+            if (gameState.winner === HUMAN) {
+                elements.statusMsg.innerHTML = "「見事だ旅の人よ！魔王AIを打ち破り、王国に平和を取り戻したぞ！」";
+            } else {
+                elements.statusMsg.innerHTML = "「無念…魔王AIの緻密な戦術の前に破れてしまったか。作戦を練り直して挑むのじゃ！」";
+            }
             return;
         }
 
-        if (gameState.phase === 'placing') {
-            for (let i = 0; i < 24; i++) {
-                if (gameState.board[i] === EMPTY) {
-                    const temp = [...gameState.board];
-                    temp[i] = HUMAN;
-                    if (checkMill(temp, i, HUMAN)) {
-                        showStatus(`ヒント: ノード ${i} に置くとミルが作れます！`, "text-emerald-400");
-                        return;
-                    }
+        if (gameState.mustRemove) {
+            elements.statusMsg.innerHTML = "「<span class='text-amber-400 font-bold'>ミル（3つ並び）完成！</span> 盤上の赤い魔王の駒を1つ選んで消滅させるのだ！」";
+            return;
+        }
+
+        if (gameState.turn === AI) {
+            elements.statusMsg.innerHTML = "「魔王AIが長考しておる…相手の狙いを読んで次の一手を備えるのじゃ。」";
+            return;
+        }
+
+        if (config.showTutorial) {
+            if (gameState.phase === 'placing') {
+                elements.statusMsg.innerHTML = "「【配置フェーズ】盤面の空いている交差点（ノード）を選んで青い駒を配置するのだ。直線上に3つ並べるとミル発動じゃ！」";
+            } else if (gameState.phase === 'moving') {
+                if (isFlyingPhase(HUMAN)) {
+                    elements.statusMsg.innerHTML = "「【飛翔フェーズ】駒が残り3個になったぞ！線の接続を無視して好きな空きマスへ自由自在にワープできるのだ！」";
+                } else {
+                    elements.statusMsg.innerHTML = "「【移動フェーズ】自分の青い駒を選び、線でつながった隣の空きマスへ移動させよ。狙いはミルの完成じゃ！」";
                 }
             }
-            showStatus("ヒント: 中央や交差点（接続の多いマス）を優先して配置しましょう。", "text-indigo-300");
         } else {
-            showStatus("ヒント: 相手の駒の動きをブロックするか、3つ並びを作れる場所を探しましょう。", "text-indigo-300");
+            if (gameState.phase === 'placing') {
+                elements.statusMsg.innerHTML = "「あなたの番です。駒を配置してください。」";
+            } else {
+                elements.statusMsg.innerHTML = "「あなたの番です。駒を選択して移動させてください。」";
+            }
         }
     }
 
     function render() {
-        // Update Inventory & Status Labels
+        const config = getDifficultyConfig();
+
+        // Update counts
         elements.humanHandCount.textContent = gameState.hand.H;
         elements.humanBoardCount.textContent = getBoardCount(HUMAN);
         elements.aiHandCount.textContent = gameState.hand.A;
         elements.aiBoardCount.textContent = getBoardCount(AI);
 
-        // Update Phase & Cards
-        if (gameState.phase === 'placing') {
-            elements.phaseBadge.textContent = "配置フェーズ";
-        } else {
-            const isFlying = isFlyingPhase(gameState.turn);
-            elements.phaseBadge.textContent = isFlying ? "飛翔（ワープ）フェーズ" : "移動フェーズ";
-        }
-
-        // Active Player Card Highlight
+        // Turn status cards highlight
         if (gameState.turn === HUMAN) {
-            elements.playerCardHuman.className = "bg-slate-900/90 border-2 border-indigo-500 rounded-2xl p-3 sm:p-4 shadow-lg shadow-indigo-500/20";
-            elements.playerCardAi.className = "bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg opacity-60";
+            elements.playerCardHuman.classList.remove('opacity-60', 'border-indigo-500');
+            elements.playerCardHuman.classList.add('border-amber-400', 'shadow-amber-500/30', 'ring-2', 'ring-amber-400/50');
+            elements.playerCardAi.classList.add('opacity-60');
+            elements.playerCardAi.classList.remove('border-amber-400', 'ring-2', 'ring-rose-500/50');
         } else {
-            elements.playerCardAi.className = "bg-slate-900/90 border-2 border-rose-500 rounded-2xl p-3 sm:p-4 shadow-lg shadow-rose-500/20";
-            elements.playerCardHuman.className = "bg-slate-900/90 border-2 border-slate-800 rounded-2xl p-3 sm:p-4 shadow-lg opacity-60";
+            elements.playerCardAi.classList.remove('opacity-60');
+            elements.playerCardAi.classList.add('border-rose-500', 'ring-2', 'ring-rose-500/50');
+            elements.playerCardHuman.classList.add('opacity-60');
+            elements.playerCardHuman.classList.remove('border-amber-400', 'ring-2', 'ring-amber-400/50');
         }
 
-        // Turn Status Messages
-        if (gameState.winner) {
-            // Handled in endGame
-        } else if (gameState.mustRemove) {
-            if (gameState.turn === HUMAN) {
-                showStatus("【ミル完成！】除去可能な相手の赤駒を選択してください。", "text-amber-400 font-bold");
-            } else {
-                showStatus("AIがミルを完成させました。駒を選んでいます...", "text-rose-400 font-bold");
-            }
-        } else if (gameState.turn === HUMAN) {
-            if (gameState.phase === 'placing') {
-                showStatus("あなたの番です: 空いているマスに駒を置いた後、ミル（3つ並び）を狙いましょう。", "text-indigo-300");
-            } else {
-                if (gameState.selectedNode !== null) {
-                    showStatus(`ノード ${gameState.selectedNode} を選択中。移動先のマスをクリックしてください。`, "text-amber-300");
-                } else {
-                    showStatus("あなたの番です: 移動させる自分の青駒をクリックしてください。", "text-indigo-300");
-                }
-            }
+        // Phase badge display
+        if (gameState.mustRemove) {
+            elements.phaseBadge.textContent = "駒の撃破";
+            elements.phaseBadge.className = "px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-xs font-extrabold shadow animate-pulse";
+        } else if (gameState.phase === 'placing') {
+            elements.phaseBadge.textContent = "配置フェーズ";
+            elements.phaseBadge.className = "px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-extrabold shadow";
+        } else if (isFlyingPhase(HUMAN) && gameState.turn === HUMAN) {
+            elements.phaseBadge.textContent = "飛翔フェーズ";
+            elements.phaseBadge.className = "px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-xs font-extrabold shadow animate-pulse";
         } else {
-            showStatus("AIが思考中...", "text-rose-400 animate-pulse");
+            elements.phaseBadge.textContent = "移動フェーズ";
+            elements.phaseBadge.className = "px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 text-xs font-extrabold shadow";
         }
 
-        // Render Pieces
+        // Update Tutorial Speech
+        updateVillagerTutorialSpeech();
+
+        // Control Buttons State
+        elements.btnUndo.disabled = gameState.history.length === 0 || gameState.isThinkingAI || gameState.winner;
+        elements.btnUndo.style.opacity = elements.btnUndo.disabled ? '0.5' : '1';
+
+        if (!config.allowHint) {
+            elements.btnHint.classList.add('hidden');
+        } else {
+            elements.btnHint.classList.remove('hidden');
+            elements.btnHint.disabled = gameState.turn !== HUMAN || gameState.isThinkingAI || gameState.winner;
+            elements.btnHint.style.opacity = elements.btnHint.disabled ? '0.5' : '1';
+        }
+
+        // Render Pieces Layer
         elements.piecesLayer.innerHTML = '';
-        elements.validLayer.innerHTML = '';
-
-        NODES.forEach(node => {
-            const pieceOwner = gameState.board[node.id];
-            
-            if (pieceOwner !== EMPTY) {
-                const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        for (let i = 0; i < 24; i++) {
+            const owner = gameState.board[i];
+            if (owner !== EMPTY) {
+                const node = NODES[i];
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                 
-                const pieceCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                pieceCircle.setAttribute('cx', node.x);
-                pieceCircle.setAttribute('cy', node.y);
-                pieceCircle.setAttribute('r', '22');
-                pieceCircle.setAttribute('fill', pieceOwner === HUMAN ? 'url(#grad-human)' : 'url(#grad-ai)');
-                pieceCircle.setAttribute('stroke', pieceOwner === HUMAN ? '#a5b4fc' : '#fca5a5');
-                pieceCircle.setAttribute('stroke-width', '2.5');
-                pieceCircle.setAttribute('class', `piece ${gameState.selectedNode === node.id ? 'piece-selected' : ''}`);
-
-                // Click event for pieces
-                pieceCircle.addEventListener('click', () => handleNodeClick(node.id));
-
-                group.appendChild(pieceCircle);
-
-                // Add highlight ring if piece is part of a mill
-                if (isPartOfMill(gameState.board, node.id, pieceOwner)) {
-                    const millRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                    millRing.setAttribute('cx', node.x);
-                    millRing.setAttribute('cy', node.y);
-                    millRing.setAttribute('r', '26');
-                    millRing.setAttribute('fill', 'none');
-                    millRing.setAttribute('stroke', pieceOwner === HUMAN ? '#818cf8' : '#fb7185');
-                    millRing.setAttribute('stroke-width', '2');
-                    millRing.setAttribute('stroke-dasharray', '4 2');
-                    group.appendChild(millRing);
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', node.x);
+                circle.setAttribute('cy', node.y);
+                circle.setAttribute('r', '20');
+                circle.setAttribute('fill', owner === HUMAN ? 'url(#grad-human)' : 'url(#grad-ai)');
+                circle.setAttribute('stroke', owner === HUMAN ? '#818cf8' : '#f87171');
+                circle.setAttribute('stroke-width', '2');
+                circle.setAttribute('class', `piece ${gameState.selectedNode === i ? 'piece-selected' : ''}`);
+                
+                if (gameState.selectedNode === i) {
+                    circle.setAttribute('stroke', '#fbbf24');
+                    circle.setAttribute('stroke-width', '4');
                 }
 
-                elements.piecesLayer.appendChild(group);
+                circle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleNodeClick(i);
+                });
+
+                g.appendChild(circle);
+                elements.piecesLayer.appendChild(g);
             }
-        });
-
-        // Render Valid Move Highlights for Human Player
-        if (gameState.turn === HUMAN && gameState.phase === 'moving' && gameState.selectedNode !== null) {
-            const validMoves = getValidMovesForNode(gameState.board, gameState.selectedNode, HUMAN);
-            
-            validMoves.forEach(targetId => {
-                const targetNode = NODES[targetId];
-                const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                highlight.setAttribute('cx', targetNode.x);
-                highlight.setAttribute('cy', targetNode.y);
-                highlight.setAttribute('r', '13');
-                highlight.setAttribute('fill', '#f59e0b');
-                highlight.setAttribute('stroke', '#fef08a');
-                highlight.setAttribute('class', 'valid-move-node');
-                highlight.style.pointerEvents = 'none';
-
-                elements.validLayer.appendChild(highlight);
-            });
         }
 
-        // Render Mill Highlights
-        renderMillHighlights();
-    }
-
-    function renderMillHighlights() {
-        elements.millLinesLayer.innerHTML = '';
-
-        MILL_LINES.forEach(line => {
-            const first = gameState.board[line[0]];
-            if (first !== EMPTY && line.every(idx => gameState.board[idx] === first)) {
-                const n1 = NODES[line[0]];
-                const n3 = NODES[line[2]];
-
-                const millLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                millLine.setAttribute('x1', n1.x);
-                millLine.setAttribute('y1', n1.y);
-                millLine.setAttribute('x2', n3.x);
-                millLine.setAttribute('y2', n3.y);
-                millLine.setAttribute('class', 'mill-highlight');
-
-                elements.millLinesLayer.appendChild(millLine);
+        // Render Valid Move & Targets Layer
+        elements.validLayer.innerHTML = '';
+        if (gameState.turn === HUMAN && !gameState.isThinkingAI && !gameState.winner) {
+            if (gameState.mustRemove) {
+                const removable = getRemovableOpponentNodes(gameState.board, AI);
+                removable.forEach(idx => {
+                    const node = NODES[idx];
+                    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    ring.setAttribute('cx', node.x);
+                    ring.setAttribute('cy', node.y);
+                    ring.setAttribute('r', '25');
+                    ring.setAttribute('fill', 'rgba(239, 68, 68, 0.25)');
+                    ring.setAttribute('stroke', '#ef4444');
+                    ring.setAttribute('stroke-width', '3');
+                    ring.setAttribute('class', 'valid-move-node');
+                    ring.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleNodeClick(idx);
+                    });
+                    elements.validLayer.appendChild(ring);
+                });
+            } else if (gameState.phase === 'moving' && gameState.selectedNode !== null) {
+                const validMoves = getValidMovesForNode(gameState.board, gameState.selectedNode, HUMAN);
+                validMoves.forEach(idx => {
+                    const node = NODES[idx];
+                    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    ring.setAttribute('cx', node.x);
+                    ring.setAttribute('cy', node.y);
+                    ring.setAttribute('r', '16');
+                    ring.setAttribute('fill', 'rgba(52, 211, 153, 0.4)');
+                    ring.setAttribute('stroke', '#34d399');
+                    ring.setAttribute('stroke-width', '3');
+                    ring.setAttribute('class', 'valid-move-node');
+                    ring.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        handleNodeClick(idx);
+                    });
+                    elements.validLayer.appendChild(ring);
+                });
             }
-        });
-    }
+        }
 
-    function showStatus(msg, textClass = "text-amber-400") {
-        elements.statusMsg.className = `text-base sm:text-lg font-bold min-h-[3rem] flex items-center leading-snug ${textClass}`;
-        elements.statusMsg.textContent = msg;
+        // Render Hint Layer (Auto or Button Triggered)
+        elements.hintLayer.innerHTML = '';
+        let currentHint = gameState.activeHint;
+        if (config.autoHint && gameState.turn === HUMAN && !gameState.isThinkingAI && !gameState.winner) {
+            currentHint = calculateBestHint();
+        }
+
+        if (currentHint) {
+            if (currentHint.type === 'place' || currentHint.type === 'remove') {
+                const node = NODES[currentHint.node];
+                const hintRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                hintRing.setAttribute('cx', node.x);
+                hintRing.setAttribute('cy', node.y);
+                hintRing.setAttribute('r', '22');
+                hintRing.setAttribute('fill', 'rgba(251, 191, 36, 0.35)');
+                hintRing.setAttribute('stroke', '#fbbf24');
+                hintRing.setAttribute('class', 'hint-pulse');
+                elements.hintLayer.appendChild(hintRing);
+            } else if (currentHint.type === 'move') {
+                const fromNode = NODES[currentHint.from];
+                const toNode = NODES[currentHint.to];
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', fromNode.x);
+                line.setAttribute('y1', fromNode.y);
+                line.setAttribute('x2', toNode.x);
+                line.setAttribute('y2', toNode.y);
+                line.setAttribute('stroke', '#fbbf24');
+                line.setAttribute('stroke-width', '4');
+                line.setAttribute('class', 'hint-line');
+                elements.hintLayer.appendChild(line);
+
+                const targetRing = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                targetRing.setAttribute('cx', toNode.x);
+                targetRing.setAttribute('cy', toNode.y);
+                targetRing.setAttribute('r', '22');
+                targetRing.setAttribute('fill', 'rgba(251, 191, 36, 0.35)');
+                targetRing.setAttribute('stroke', '#fbbf24');
+                targetRing.setAttribute('class', 'hint-pulse');
+                elements.hintLayer.appendChild(targetRing);
+            }
+        }
     }
 
     function logMove(msg) {
-        const entry = document.createElement('div');
-        entry.className = "py-0.5 border-b border-slate-800/50 flex justify-between";
-        entry.innerHTML = `<span>${msg}</span>`;
-        elements.moveHistory.prepend(entry);
+        const item = document.createElement('div');
+        item.className = 'py-1 border-b border-amber-500/10 flex items-start gap-1.5';
+        item.innerHTML = `<span class="text-amber-400 font-bold">⚔️</span> <span>${msg}</span>`;
+        elements.moveHistory.appendChild(item);
+        elements.moveHistory.scrollTop = elements.moveHistory.scrollHeight;
+    }
+
+    function showStatus(msg, colorClass = "text-amber-300") {
+        elements.statusMsg.innerHTML = `<span class="${colorClass}">${msg}</span>`;
     }
 
     function endGame(winner, reason) {
         gameState.winner = winner;
-        elements.gameoverModal.classList.remove('hidden');
+        elements.gameoverReason.textContent = reason;
 
         if (winner === HUMAN) {
-            elements.gameoverTitle.textContent = "勝利！ 🎉";
-            elements.gameoverReason.textContent = reason;
-            elements.gameoverIconContainer.className = "w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-lg shadow-emerald-500/30";
-            elements.gameoverIconContainer.innerHTML = `<i class="fa-solid fa-trophy"></i>`;
+            elements.gameoverTitle.textContent = "🏆 勝利！勇者の勝利です！";
+            elements.gameoverTitle.className = "text-2xl font-bold text-amber-400 mb-2";
+            elements.gameoverIconContainer.className = "w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 bg-amber-500/20 text-amber-400 border-2 border-amber-400 shadow-lg shadow-amber-500/30";
+            elements.gameoverIconContainer.innerHTML = '<i class="fa-solid fa-crown"></i>';
         } else {
-            elements.gameoverTitle.textContent = "敗北... 🤖";
-            elements.gameoverReason.textContent = reason;
-            elements.gameoverIconContainer.className = "w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-lg shadow-rose-500/30";
-            elements.gameoverIconContainer.innerHTML = `<i class="fa-solid fa-robot"></i>`;
+            elements.gameoverTitle.textContent = "💀 敗北…魔王AIの勝利";
+            elements.gameoverTitle.className = "text-2xl font-bold text-rose-400 mb-2";
+            elements.gameoverIconContainer.className = "w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl mb-4 bg-rose-500/20 text-rose-400 border-2 border-rose-400 shadow-lg shadow-rose-500/30";
+            elements.gameoverIconContainer.innerHTML = '<i class="fa-solid fa-skull"></i>';
         }
+
+        elements.gameoverModal.classList.remove('hidden');
+        render();
     }
 
     function hideModals() {
@@ -1112,21 +1704,29 @@
         elements.gameoverModal.classList.add('hidden');
     }
 
-    // Event Listeners Registration
-    elements.btnNewGame.addEventListener('click', resetGame);
-    elements.btnRestartGame.addEventListener('click', resetGame);
-    elements.btnUndo.addEventListener('click', undoMove);
-    elements.btnHint.addEventListener('click', giveHint);
-
+    // Modal & Control Event Listeners
     elements.btnRules.addEventListener('click', () => elements.rulesModal.classList.remove('hidden'));
     elements.btnCloseRules.addEventListener('click', hideModals);
     elements.btnUnderstandRules.addEventListener('click', hideModals);
-
-    // Initial Engine Bootstrap
-    window.addEventListener('load', () => {
-        initSVG();
-        resetGame();
+    
+    elements.btnRestartGame.addEventListener('click', () => {
+        hideModals();
+        elements.rpgModal.classList.remove('hidden');
     });
+
+    elements.btnUndo.addEventListener('click', undoMove);
+    elements.btnHint.addEventListener('click', giveHint);
+    elements.btnNewGame.addEventListener('click', () => {
+        elements.rpgModal.classList.remove('hidden');
+    });
+
+    // Page Load Initialization
+    window.onload = function() {
+        initSVG();
+        initRpgModalEvents();
+        updateVillagerDialogue();
+        elements.rpgModal.classList.remove('hidden');
+    };
     </script>
 </body>
 </html>
