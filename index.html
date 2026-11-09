@@ -276,11 +276,11 @@
                     <line x1="50" y1="300" x2="210" y2="300" stroke="#b45309" stroke-width="5" opacity="0.85" />
                     <line x1="390" y1="300" x2="550" y2="300" stroke="#b45309" stroke-width="5" opacity="0.85" />
 
-                    <!-- Dynamic Layers -->
+                    <!-- Dynamic Layers (Reordered valid-moves-layer above pieces for perfect touch handling) -->
                     <g id="mill-lines-layer"></g>
                     <g id="board-nodes-layer"></g>
-                    <g id="valid-moves-layer"></g>
                     <g id="board-pieces-layer"></g>
+                    <g id="valid-moves-layer"></g>
                     <g id="hint-layer"></g>
                 </svg>
             </div>
@@ -807,12 +807,12 @@
         const diff = elements.difficultySelect.value;
         if (diff === 'easy') {
             const tutOn = elements.easyTutorialSelect.value === 'on';
-            return { depth: 1, showGuide: true, showTutorial: tutOn, allowHint: true, autoHint: true };
+            return { depth: 1, showGuide: true, showTutorial: tutOn, allowHint: true, autoHint: true, isEasy: true };
         } else if (diff === 'medium') {
             const hintOn = elements.mediumHintSelect.value === 'on';
-            return { depth: 2, showGuide: false, showTutorial: false, allowHint: hintOn, autoHint: false };
+            return { depth: 2, showGuide: false, showTutorial: false, allowHint: hintOn, autoHint: false, isEasy: false };
         } else { // 'hard'
-            return { depth: 4, showGuide: false, showTutorial: false, allowHint: false, autoHint: false };
+            return { depth: 4, showGuide: false, showTutorial: false, allowHint: false, autoHint: false, isEasy: false };
         }
     }
 
@@ -959,7 +959,7 @@
                 
                 switchTurn();
             } else {
-                showStatus("そこは削除できません。ミル以外の相手の駒を選択してください。", "text-amber-400");
+                showStatus("「その駒は『ミル（3つ並び）』で守られているため選択できません。他の赤駒を選択してください！」", "text-amber-400 font-bold");
             }
             render();
             return;
@@ -970,12 +970,13 @@
             if (gameState.board[nodeId] === EMPTY) {
                 saveHistory();
                 gameState.board[nodeId] = HUMAN;
-                gameState.hand.H--;
+                gameState.hand.H = Math.max(0, gameState.hand.H - 1);
                 logMove(`あなたの配置: ノード ${nodeId}`);
 
                 if (checkMill(gameState.board, nodeId, HUMAN)) {
                     gameState.mustRemove = true;
                     logMove("ミル（3つ並び）が成立！ 相手の駒を選択して除去してください。");
+                    checkPhaseTransition();
                     render();
                     return;
                 }
@@ -1027,7 +1028,9 @@
     }
 
     function checkPhaseTransition() {
-        if (gameState.hand.H === 0 && gameState.hand.A === 0) {
+        if (gameState.hand.H <= 0 && gameState.hand.A <= 0) {
+            gameState.hand.H = Math.max(0, gameState.hand.H);
+            gameState.hand.A = Math.max(0, gameState.hand.A);
             gameState.phase = 'moving';
         }
     }
@@ -1061,18 +1064,23 @@
             if (gameState.mustRemove) {
                 // AI must pick human piece to remove
                 const removable = getRemovableOpponentNodes(gameState.board, HUMAN);
-                let bestPick = removable[0];
-                let bestScore = -Infinity;
+                let bestPick;
 
-                removable.forEach(idx => {
-                    const tempBoard = [...gameState.board];
-                    tempBoard[idx] = EMPTY;
-                    const score = evaluateBoard(tempBoard, AI);
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestPick = idx;
-                    }
-                });
+                // 初級AI（Easy）の場合は70%の確率でランダムに駒を除去
+                if (config.depth === 1 && Math.random() < 0.7) {
+                    bestPick = removable[Math.floor(Math.random() * removable.length)];
+                } else {
+                    let bestScore = -Infinity;
+                    removable.forEach(idx => {
+                        const tempBoard = [...gameState.board];
+                        tempBoard[idx] = EMPTY;
+                        const score = evaluateBoard(tempBoard, AI);
+                        if (score > bestScore) {
+                            bestScore = score;
+                            bestPick = idx;
+                        }
+                    });
+                }
 
                 gameState.board[bestPick] = EMPTY;
                 gameState.mustRemove = false;
@@ -1084,6 +1092,8 @@
                     return;
                 }
 
+                // 除去完了時にフェーズチェック（手駒が0なら移動フェーズへ）
+                checkPhaseTransition();
                 gameState.isThinkingAI = false;
                 switchTurn();
                 return;
@@ -1091,14 +1101,26 @@
 
             // Placing Phase AI
             if (gameState.phase === 'placing') {
-                const bestNode = getBestPlaceMove(depth);
+                let bestNode;
+                // 初級AI（Easy）の場合は75%の確率でランダム配置
+                if (config.depth === 1 && Math.random() < 0.75) {
+                    const emptyNodes = [];
+                    for (let i = 0; i < 24; i++) {
+                        if (gameState.board[i] === EMPTY) emptyNodes.push(i);
+                    }
+                    bestNode = emptyNodes[Math.floor(Math.random() * emptyNodes.length)];
+                } else {
+                    bestNode = getBestPlaceMove(depth);
+                }
+
                 gameState.board[bestNode] = AI;
-                gameState.hand.A--;
+                gameState.hand.A = Math.max(0, gameState.hand.A - 1);
                 logMove(`AIの配置: ノード ${bestNode}`);
 
                 if (checkMill(gameState.board, bestNode, AI)) {
                     gameState.mustRemove = true;
                     logMove("AIのミルが成立しました！");
+                    checkPhaseTransition();
                     render();
                     setTimeout(executeAIMove, 700);
                     return;
@@ -1112,7 +1134,25 @@
 
             // Moving Phase AI
             if (gameState.phase === 'moving') {
-                const move = getBestMoveAI(depth);
+                let move = null;
+                // 初級AI（Easy）の場合は75%の確率でランダム移動
+                if (config.depth === 1 && Math.random() < 0.75) {
+                    let possibleMoves = [];
+                    for (let i = 0; i < 24; i++) {
+                        if (gameState.board[i] === AI) {
+                            const targets = getValidMovesForNode(gameState.board, i, AI);
+                            targets.forEach(to => possibleMoves.push({ from: i, to }));
+                        }
+                    }
+                    if (possibleMoves.length > 0) {
+                        move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                    }
+                }
+
+                if (!move) {
+                    move = getBestMoveAI(depth);
+                }
+
                 if (move) {
                     gameState.board[move.from] = EMPTY;
                     gameState.board[move.to] = AI;
@@ -1282,12 +1322,18 @@
 
     // AI Placement Selector
     function getBestPlaceMove(depth) {
+        const config = getDifficultyConfig();
         const emptyNodes = [];
         for (let i = 0; i < 24; i++) {
             if (gameState.board[i] === EMPTY) emptyNodes.push(i);
         }
 
         if (emptyNodes.length === 0) return 0;
+
+        // Weakened Easy AI: 70% chance to place randomly
+        if (config.isEasy && Math.random() < 0.7) {
+            return emptyNodes[Math.floor(Math.random() * emptyNodes.length)];
+        }
 
         // 1. Immediate Mill for AI
         for (let node of emptyNodes) {
@@ -1325,6 +1371,7 @@
 
     // AI Move Selector
     function getBestMoveAI(depth) {
+        const config = getDifficultyConfig();
         let possibleMoves = [];
         for (let i = 0; i < 24; i++) {
             if (gameState.board[i] === AI) {
@@ -1334,6 +1381,11 @@
         }
 
         if (possibleMoves.length === 0) return null;
+
+        // Weakened Easy AI: 70% chance to move randomly
+        if (config.isEasy && Math.random() < 0.7) {
+            return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+        }
 
         // Priority 1: Check for instant Mill completion
         for (let move of possibleMoves) {
@@ -1588,19 +1640,34 @@
                 const removable = getRemovableOpponentNodes(gameState.board, AI);
                 removable.forEach(idx => {
                     const node = NODES[idx];
+                    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    g.setAttribute('class', 'cursor-pointer');
+
+                    // Expanded transparent hit circle for guaranteed mobile/mouse tap
+                    const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    hitArea.setAttribute('cx', node.x);
+                    hitArea.setAttribute('cy', node.y);
+                    hitArea.setAttribute('r', '30');
+                    hitArea.setAttribute('fill', 'transparent');
+
+                    // Visual target ring for all removable opponent pieces
                     const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                     ring.setAttribute('cx', node.x);
                     ring.setAttribute('cy', node.y);
-                    ring.setAttribute('r', '25');
-                    ring.setAttribute('fill', 'rgba(239, 68, 68, 0.25)');
+                    ring.setAttribute('r', '26');
+                    ring.setAttribute('fill', 'rgba(239, 68, 68, 0.35)');
                     ring.setAttribute('stroke', '#ef4444');
-                    ring.setAttribute('stroke-width', '3');
+                    ring.setAttribute('stroke-width', '4');
                     ring.setAttribute('class', 'valid-move-node');
-                    ring.addEventListener('click', (e) => {
+
+                    g.appendChild(hitArea);
+                    g.appendChild(ring);
+
+                    g.addEventListener('click', (e) => {
                         e.stopPropagation();
                         handleNodeClick(idx);
                     });
-                    elements.validLayer.appendChild(ring);
+                    elements.validLayer.appendChild(g);
                 });
             } else if (gameState.phase === 'moving' && gameState.selectedNode !== null) {
                 const validMoves = getValidMovesForNode(gameState.board, gameState.selectedNode, HUMAN);
